@@ -1,0 +1,73 @@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <h5 class="mb-0">Asset Status</h5>
+      <div class="ms-4">
+        <input class="form-control form-control-sm" placeholder="Search" [(ngModel)]="search" />
+      </div>
+    </div>
+    <div>
+      <select class="form-select form-select-sm me-2" [(ngModel)]="pageSize">
+        <option [ngValue]="5">5</option>
+        <option [ngValue]="10">10</option>
+        <option [ngValue]="25">25</option>
+      </select>
+      <button type="button" class="btn btn-outline-primary" (click)="openModal()">Add Status</button>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive table-scroll-x">
+      <table class="table table-hover align-middle table-nowrap">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Status Name</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of pagedStatuses; let i = index">
+            <td>{{ (page - 1) * pageSize + i + 1 }}</td>
+            <td>{{ s.StatusName }}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="editStatus(s)">Edit</button>
+              <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteStatus(s.StatusId!)">Delete</button>
+            </td>
+          </tr>
+          <tr *ngIf="!filteredStatuses.length">
+            <td colspan="3" class="text-center text-muted">No statuses found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card-footer d-flex justify-content-end align-items-center">
+    <small class="text-muted me-3">Showing {{ filteredStatuses.length }} items</small>
+    <nav>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item" [class.disabled]="page === 1"><a class="page-link" (click)="prevPage()">Prev</a></li>
+        <li class="page-item" *ngFor="let p of [].constructor(totalPages()); let idx = index" [class.active]="page === idx + 1"><a class="page-link" (click)="gotoPage(idx + 1)">{{ idx + 1 }}</a></li>
+        <li class="page-item" [class.disabled]="page === totalPages()"><a class="page-link" (click)="nextPage()">Next</a></li>
+      </ul>
+    </nav>
+  </div>
+</div>
+
+<ng-template #statusModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">{{ isEditing ? 'Edit Status' : 'Add Status' }}</h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss('Cross click')"></button>
+  </div>
+  <div class="modal-body">
+    <form #statusForm="ngForm" (ngSubmit)="submitStatus(statusForm, modal)" class="row g-3">
+      <div class="col-12">
+        <label class="form-label">Status Name</label>
+        <input type="text" class="form-control" name="StatusName" [(ngModel)]="statusModel.StatusName" required />
+      </div>
+      <div class="col-12 text-end">
+        <button type="button" class="btn btn-secondary me-2" (click)="modal.dismiss('cancel')">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="statusForm.invalid">{{ isEditing ? 'Update' : 'Save' }}</button>
+      </div>
+    </form>
+  </div>
+</ng-template>

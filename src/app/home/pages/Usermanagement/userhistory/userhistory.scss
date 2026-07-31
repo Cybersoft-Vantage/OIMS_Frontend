@@ -1,0 +1,5 @@
+/* Styles for detailed asset history page */
+.card-body {
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+}

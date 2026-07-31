@@ -1,0 +1,331 @@
+<div class="card">
+    <div
+        class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+        <ul class="nav nav-tabs mb-0">
+            <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="activeTab === 'workorders'"
+                    (click)="setTab('workorders')">Work Orders</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="activeTab === 'history'"
+                    (click)="setTab('history')">Maintenance History</button>
+            </li>
+            <li class="nav-item">
+                <button type="button" class="nav-link" [class.active]="activeTab === 'vendors'"
+                    (click)="setTab('vendors')">Vendor Details</button>
+            </li>
+        </ul>
+    </div>
+    <div class="card-body">
+        <div *ngIf="activeTab === 'workorders'">
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="border rounded p-3 bg-white">
+
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+
+                                <h6 class="mb-1">Maintenance</h6>
+                                <p class="text-muted mb-0">Track damaged assets, create work orders, and manage vendors.
+                                </p>
+
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-sm"
+                                    (click)="openWorkOrderModal(workOrderModal)">Add Work Order</button>
+                            </div>
+                        </div>
+                        <div class="table-responsive table-scroll-x">
+                            <table class="table table-hover align-middle table-nowrap">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Work Order</th>
+                                        <th>Asset</th>
+                                        <th>Reported By</th>
+                                        <th>Status</th>
+                                        <th>Vendor</th>
+                                        <th>Repair Cost</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let work of workOrdersFiltered; let i = index"
+                                        [class.table-danger]="work.Status?.toLowerCase() === 'open' || work.Status?.toLowerCase() === 'in progress'">
+                                        <td>{{ i + 1 }}</td>
+                                        <td>{{ work.Reference }}</td>
+                                        <td>{{ getAssetName(work.DetailedAssetId) }}</td>
+                                        <td>{{ work.ReportedByName || '—' }}</td>
+                                        <td>{{ statusLabel(work.Status || 'Unknown') }}</td>
+                                        <td>{{ getVendorName(work.VendorId) || '—' }}</td>
+                                        <td>{{ work.RepairCost != null ? getRepairCostLabel(work.RepairCost) : '—' }}</td>
+                                        <td class="text-end">
+                                            <button
+                                                *ngIf="work.Status?.toLowerCase() !== 'repaired' && work.Status?.toLowerCase() !== 'completed'"
+                                                type="button" class="btn btn-sm btn-success me-2"
+                                                (click)="completeWorkOrder(work)">Mark Repaired</button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                (click)="openWorkOrderModal(workOrderModal, work)">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr *ngIf="!workOrdersFiltered.length">
+                                        <td colspan="7" class="text-center text-muted">No work orders available.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                </div>
+
+
+                <div class="col-lg-5">
+                    <ng-template #workOrderModal let-modal>
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{ selectedWorkOrder ? 'Edit Work Order' : 'New Maintenance Work Order' }}</h5>
+                            <button type="button" class="btn-close" aria-label="Close"
+                                (click)="modal.dismiss()"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form #workOrderForm="ngForm" (ngSubmit)="createWorkOrder(workOrderForm)">
+                                <div class="mb-3">
+                                    <label class="form-label">Asset</label>
+                                    <select class="form-select" name="DetailedAssetId"
+                                        [(ngModel)]="maintenanceModel.DetailedAssetId" required>
+                                        <option [ngValue]="undefined">Select asset</option>
+                                        <option *ngFor="let asset of maintenanceAssets"
+                                            [ngValue]="asset.DetailedAssetId">{{ asset.AssetTag }} — {{ asset.Name }}
+                                            ({{ asset.Status || 'Unknown' }})</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" name="Status" [(ngModel)]="maintenanceModel.Status"
+                                        required>
+                                        <option *ngFor="let status of statusOptions" [ngValue]="status">{{
+                                            statusLabel(status) }}</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Reported By</label>
+                                    <select class="form-select" name="ReportedByEmployeeId"
+                                        [(ngModel)]="maintenanceModel.ReportedByEmployeeId" required>
+                                        <option [ngValue]="undefined">Select employee</option>
+                                        <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{
+                                            employee.FullName }}</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Vendor</label>
+                                    <select class="form-select" name="VendorId" [(ngModel)]="maintenanceModel.VendorId">
+                                        <option [ngValue]="undefined">Select vendor</option>
+                                        <option *ngFor="let vendor of vendors" [ngValue]="vendor.VendorId">{{
+                                            vendor.Name }}</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Repair Cost</label>
+                                    <input type="number" step="0.01" class="form-control" name="RepairCost"
+                                        [(ngModel)]="maintenanceModel.RepairCost" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Notes</label>
+                                    <textarea class="form-control" name="Notes" [(ngModel)]="maintenanceModel.Notes"
+                                        rows="3"></textarea>
+                                </div>
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary">{{ selectedWorkOrder ? 'Save Changes'
+                                        : 'Create Work Order' }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </ng-template>
+                </div>
+            </div>
+
+            <!-- moved to Maintenance History tab -->
+        </div>
+
+        <div *ngIf="activeTab === 'history'">
+            <div class="row">
+                <div class="col-12">
+                    <div class="border rounded p-3 bg-white">
+                        <div
+                            class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-3">
+                            <div>
+                                <h6 class="mb-1">Maintenance History</h6>
+                                <p class="text-muted mb-0"> View damage and repair history.
+                                </p>
+                            </div>
+                            <div
+                                class="d-flex flex-column flex-lg-row gap-2 w-100 w-lg-auto align-items-start align-items-lg-center">
+                                <div class="input-group input-group-sm" style="min-width: 280px; max-width: 420px;">
+                                    <input type="search" class="form-control"
+                                        placeholder="Search work order, asset, vendor..." [(ngModel)]="historySearch"
+                                        (ngModelChange)="historyPage = 1" />
+                                </div>
+                                <select class="form-select form-select-sm" [(ngModel)]="historyStatusFilter"
+                                    (ngModelChange)="historyPage = 1">
+                                    <option value="">All Statuses</option>
+                                    <option value="damaged">Damaged</option>
+                                    <option value="maintenance">Maintenance</option>
+                                    <option value="open">Open</option>
+                                    <option value="in progress">In Progress</option>
+                                    <option value="repaired">Repaired</option>
+                                    <option value="completed">Completed</option>
+                                </select>
+                                <select class="form-select form-select-sm" [(ngModel)]="historyVendorFilter"
+                                    (ngModelChange)="historyPage = 1">
+                                    <option [ngValue]="null">All Vendors</option>
+                                    <option *ngFor="let vendor of vendors" [ngValue]="vendor.VendorId">{{ vendor.Name }}
+                                    </option>
+                                </select>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="mb-0 small text-muted">Rows</label>
+                                    <select class="form-select form-select-sm" [(ngModel)]="historyPageSize"
+                                        (ngModelChange)="historyPage = 1">
+                                        <option [ngValue]="5">5</option>
+                                        <option [ngValue]="10">10</option>
+                                        <option [ngValue]="20">20</option>
+                                        <option [ngValue]="50">50</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive table-scroll-x">
+                            <table class="table table-hover align-middle table-nowrap mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Work Order ID</th>
+                                        <th>Asset</th>
+                                        <th>Tag</th>
+                                        <th>Status</th>
+                                        <th>Reported By</th>
+                                        <th>Damaged By</th>
+                                        <th>Vendor</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let work of pagedMaintenanceHistoryRows; let i = index"
+                                        class="table-warning">
+                                        <td>{{ ((historyPage - 1) * historyPageSize) + i + 1 }}</td>
+                                        <td>{{ work.Reference || '—' }}</td>
+                                        <td>{{ getAssetName(work.DetailedAssetId) }}</td>
+                                        <td>{{ getAssetTag(work.DetailedAssetId) }}</td>
+                                        <td>{{ statusLabel(work.Status || 'Unknown') }}</td>
+                                        <td>{{ work.ReportedByName || '—' }}</td>
+                                        <td>{{ getReturnedBy(work.DetailedAssetId) || '—' }}</td>
+                                        <td>{{ work.VendorName || '—' }}</td>
+                                    </tr>
+                                    <tr *ngIf="!pagedMaintenanceHistoryRows.length">
+                                        <td colspan="8" class="text-center text-muted">No damaged or maintenance history
+                                            found.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div
+                            class="d-flex justify-content-between align-items-center mt-3 gap-2 flex-column flex-md-row">
+                            <div class="small text-muted">Page {{ historyPage }} of {{ maintenanceHistoryTotalPages }}
+                            </div>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button type="button" class="btn btn-outline-secondary" [disabled]="historyPage <= 1"
+                                    (click)="goToHistoryPage(historyPage - 1)">Previous</button>
+                                <button type="button" class="btn btn-outline-secondary"
+                                    [disabled]="historyPage >= maintenanceHistoryTotalPages"
+                                    (click)="goToHistoryPage(historyPage + 1)">Next</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+   
+    <div *ngIf="activeTab === 'vendors'">
+        <div class="border rounded p-3 bg-white">
+            <div class="row gy-3 maintenance-vendor-tab">
+                <div class="col-12 col-lg-7">
+                    <div class="border rounded p-3 bg-white h-100 maintenance-vendor-list-card">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h6 class="mb-1">Vendor List</h6>
+                                <p class="text-muted mb-0">Manage the vendors assigned to repairs and maintenance.</p>
+                            </div>
+                            <span class="badge bg-secondary">{{ vendors.length }} vendors</span>
+                        </div>
+                        <div class="table-responsive table-scroll-x">
+                        <table class="table table-hover align-middle table-nowrap mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Contact</th>
+                                    <th>Phone</th>
+                                    <th>Email</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr *ngFor="let vendor of vendors; let i = index">
+                                    <td>{{ i + 1 }}</td>
+                                    <td>{{ vendor.Name }}</td>
+                                    <td>{{ vendor.ContactName || '—' }}</td>
+                                    <td>{{ vendor.Phone || '—' }}</td>
+                                    <td>{{ vendor.Email || '—' }}</td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                            (click)="editVendor(vendor)">Edit</button>
+                                    </td>
+                                </tr>
+                                <tr *ngIf="!vendors.length">
+                                    <td colspan="6" class="text-center text-muted">No vendors configured.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-lg-5">
+                <div class="border rounded p-3 bg-white h-100 maintenance-vendor-form-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="mb-1">{{ selectedVendor ? 'Edit Vendor' : 'Add Vendor' }}</h6>
+                            <p class="text-muted mb-0">{{ selectedVendor ? 'Update vendor details.' : 'Add a new vendor to the maintenance roster.' }}</p>
+                        </div>
+                        <span class="badge bg-info text-dark">{{ selectedVendor ? 'Edit' : 'New' }}</span>
+                    </div>
+                    <form #vendorForm="ngForm" (ngSubmit)="saveVendor(vendorForm)">
+                        <div class="mb-3">
+                            <label class="form-label">Name</label>
+                            <input type="text" class="form-control" name="Name" [(ngModel)]="vendorModel.Name" required />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contact Name</label>
+                            <input type="text" class="form-control" name="ContactName" [(ngModel)]="vendorModel.ContactName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" name="Email" [(ngModel)]="vendorModel.Email" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone</label>
+                            <input type="text" class="form-control" name="Phone" [(ngModel)]="vendorModel.Phone" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address</label>
+                            <textarea class="form-control" name="Address" rows="3" [(ngModel)]="vendorModel.Address"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between gap-2">
+                            <button type="submit" class="btn btn-primary">{{ selectedVendor ? 'Save Vendor' : 'Add Vendor' }}</button>
+                            <button *ngIf="selectedVendor" type="button" class="btn btn-outline-secondary" (click)="cancelVendorEdit()">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+ </div>
+
+</div>

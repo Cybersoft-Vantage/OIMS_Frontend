@@ -1,0 +1,9 @@
+.card {
+  .card-header {
+    gap: 0.75rem;
+  }
+  .table-nowrap th,
+  .table-nowrap td {
+    white-space: nowrap;
+  }
+}

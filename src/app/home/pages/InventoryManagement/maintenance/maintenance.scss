@@ -1,0 +1,51 @@
+.card { min-height: 360px; }
+
+.card-header .nav-tabs {
+  border-bottom: none;
+}
+
+.card-header .nav-tabs .nav-link {
+  border: 1px solid transparent;
+  border-radius: 0.35rem;
+  color: #495057;
+  margin-right: 0.25rem;
+}
+
+.card-header .nav-tabs .nav-link.active {
+  border-color: #dee2e6 #dee2e6 #fff;
+  background-color: #fff;
+  color: #212529;
+}
+
+.table-responsive.table-scroll-x {
+  overflow-x: auto;
+}
+
+.table th,
+.table td {
+  white-space: nowrap;
+}
+
+.maintenance-vendor-tab {
+  margin-top: 1rem;
+}
+
+.maintenance-vendor-tab .maintenance-vendor-list-card,
+.maintenance-vendor-tab .maintenance-vendor-form-card {
+  min-height: 420px;
+}
+
+.maintenance-vendor-tab .maintenance-vendor-list-card .table-responsive,
+.maintenance-vendor-tab .maintenance-vendor-form-card .table-responsive {
+  max-height: 520px;
+}
+
+.maintenance-vendor-form-card {
+  background-color: #f8f9fb;
+}
+
+@media (max-width: 767.98px) {
+  .card-header .nav-tabs .nav-link {
+    margin-bottom: 0.25rem;
+  }
+}

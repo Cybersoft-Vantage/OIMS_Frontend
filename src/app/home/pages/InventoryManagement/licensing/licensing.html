@@ -1,0 +1,108 @@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0">Licensing</h5>
+      <p class="text-muted mb-0">Manage software licenses, seats, and renewal dates.</p>
+    </div>
+    <button class="btn btn-primary btn-sm" (click)="openCreate()">Add License</button>
+  </div>
+  <div class="card-body table-scroll-x">
+    <div class="mb-3 d-flex align-items-center gap-2">
+      <input class="form-control form-control-sm w-25" placeholder="Search software or vendor" [(ngModel)]="search" />
+    </div>
+
+    <table class="table table-hover align-middle table-nowrap">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Software</th>
+          <th>Vendor</th>
+          <th>Renewal</th>
+          <th>Seats</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let license of pagedLicenses; let i = index">
+          <td>{{ (page - 1) * pageSize + i + 1 }}</td>
+          <td>
+            <div class="fw-semibold">{{ license.SoftwareName }}</div>
+            <div class="small text-muted">{{ license.LicenseKey }}</div>
+          </td>
+          <td>{{ license.Vendor }}</td>
+          <td>{{ license.RenewalDate || '—' }}</td>
+          <td>{{ license.Seats }}</td>
+          <td>
+            <span class="badge" [ngClass]="license.Status === 'Expired' ? 'bg-danger' : license.Status === 'Expiring Soon' ? 'bg-warning text-dark' : 'bg-success'">{{ license.Status || 'Active' }}</span>
+          </td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary me-1" (click)="openEdit(license)">Edit</button>
+            <button class="btn btn-sm btn-outline-danger" (click)="delete(license)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="d-flex justify-content-between align-items-center mt-2">
+      <div>Showing page {{ page }} / {{ totalPages() }}</div>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary me-1" (click)="prevPage()">Prev</button>
+        <button class="btn btn-sm btn-outline-secondary" (click)="nextPage()">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <ng-template #licenseModal>
+    <div class="modal-header">
+      <h5 class="modal-title">{{ isEditing ? 'Edit' : 'Add' }} License</h5>
+      <button type="button" class="btn-close" aria-label="Close" (click)="modalService.dismissAll()"></button>
+    </div>
+    <div class="modal-body">
+      <form #f="ngForm" (ngSubmit)="save()">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Software Name</label>
+            <input class="form-control" name="SoftwareName" [(ngModel)]="model.SoftwareName" required />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Vendor</label>
+            <input class="form-control" name="Vendor" [(ngModel)]="model.Vendor" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">License Key</label>
+            <input class="form-control" name="LicenseKey" [(ngModel)]="model.LicenseKey" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Seats</label>
+            <input type="number" min="1" class="form-control" name="Seats" [(ngModel)]="model.Seats" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Purchase Date</label>
+            <input type="date" class="form-control" name="PurchaseDate" [(ngModel)]="model.PurchaseDate" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Renewal Date</label>
+            <input type="date" class="form-control" name="RenewalDate" [(ngModel)]="model.RenewalDate" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="Status" [(ngModel)]="model.Status">
+              <option>Active</option>
+              <option>Expiring Soon</option>
+              <option>Expired</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" rows="3" name="Notes" [(ngModel)]="model.Notes"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="modalService.dismissAll()">Cancel</button>
+      <button class="btn btn-primary" (click)="save()">{{ isEditing ? 'Save Changes' : 'Create' }}</button>
+    </div>
+  </ng-template>
+</div>

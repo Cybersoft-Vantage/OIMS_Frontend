@@ -1,0 +1,248 @@
+.sign-in-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: #f2f5f9;
+}
+
+.sign-in-card {
+  width: min(1100px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1.05fr;
+  box-shadow: 0 26px 60px rgba(18, 44, 110, 0.12);
+  border-radius: 24px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sign-in-panel {
+  padding: 3rem;
+}
+
+.left-panel {
+  background: linear-gradient(180deg, #0f4f8b 0%, #1663b5 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.left-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle at top left, rgba(255, 255, 255, 0.08), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.05), transparent 28%);
+  pointer-events: none;
+}
+
+.brand-panel {
+  max-width: 360px;
+  text-align: center;
+}
+
+.brand-logo-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 220px;
+  height: 220px;
+  margin-bottom: 2rem;
+  border-radius: 50px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-logo-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 40%);
+  opacity: 0.8;
+}
+
+.brand-logo {
+  width: 315px;
+  height: 172px;
+  border-radius: 32px;
+  object-fit: contain;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-panel h1 {
+  margin-bottom: 1rem;
+  font-size: 2.75rem;
+  font-weight: 800;
+  line-height: 1.03;
+  letter-spacing: -0.03em;
+}
+
+.brand-panel p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.right-panel {
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sign-in-form-card {
+  width: 100%;
+  max-width: 440px;
+}
+
+.form-header h3 {
+  margin-bottom: 0.5rem;
+}
+
+.form-header p {
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.password-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+}
+
+.toggle-password {
+  min-width: 90px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.remember-row {
+  font-size: 0.95rem;
+}
+
+.forgot-link {
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+  color: #94a3b8;
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+  margin: 0 1rem;
+}
+
+.btn-block {
+  display: block;
+}
+
+.otp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(48px, 1fr));
+  gap: 0.75rem;
+}
+
+.otp-label {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.otp-panel {
+  border: 1px solid #dbe6f5;
+  border-radius: 14px;
+  padding: 0.9rem;
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+}
+
+.otp-box {
+  text-align: center;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.78rem 0.25rem;
+  border-radius: 12px;
+  border: 1px solid #b9c9e3;
+  background: #ffffff;
+  color: #12325a;
+  transition: border-color 120ms ease, box-shadow 120ms ease, transform 120ms ease;
+}
+
+.otp-box:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.otp-hint {
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  color: #5b6f8f;
+}
+
+.otp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.otp-resend-link {
+  color: #1d4ed8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.otp-resend-link:disabled {
+  color: #94a3b8;
+  pointer-events: none;
+  text-decoration: none;
+}
+
+@media (max-width: 900px) {
+  .sign-in-card {
+    grid-template-columns: 1fr;
+  }
+
+  .left-panel {
+    padding: 2rem 1.5rem;
+    text-align: center;
+  }
+
+  .sign-in-panel {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .sign-in-card {
+    border-radius: 18px;
+  }
+
+  .brand-panel h1 {
+    font-size: 2rem;
+  }
+}

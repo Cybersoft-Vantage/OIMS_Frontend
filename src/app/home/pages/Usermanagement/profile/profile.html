@@ -1,0 +1,65 @@
+<div class="profile-page py-4">
+  <div class="profile-header p-4 rounded-4 shadow-sm mb-4">
+    <div>
+      <h4 class="mb-1">My Profile</h4>
+      <p class="mb-0 text-muted">Update your account settings, contact details and photo.</p>
+    </div>
+    <button class="btn btn-primary btn-sm px-4" (click)="save()">Save Changes</button>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-xl-3 col-lg-4">
+      <div class="profile-sidebar p-4 rounded-4 shadow-sm border bg-white h-100 text-center">
+        <div class="profile-avatar mb-3">
+          <img [src]="profileImageDataUrl || 'assets/images/logo-icon.png'" alt="User Profile Image" class="profile-avatar-img" />
+        </div>
+        <h5 class="mb-1">{{ model.FullName || username }}</h5>
+        <p class="text-muted mb-4">{{ model.Designation || 'Administrator' }}</p>
+
+        <div class="d-grid gap-2 mb-3">
+          <label class="btn btn-outline-primary btn-sm rounded-pill text-primary fw-semibold">
+            Upload New Photo
+            <input type="file" accept="image/*" (change)="onFileChange($event)" hidden />
+          </label>
+          <button class="btn btn-outline-danger btn-sm rounded-pill" type="button" (click)="clearImage()">Remove Photo</button>
+        </div>
+
+        <div class="profile-info mt-4 rounded-3 p-3 bg-light text-start">
+          <div class="text-uppercase text-muted fs-xs mb-2">User ID</div>
+          <div class="fw-semibold">{{ model.UserId || username }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-9 col-lg-8">
+      <div class="profile-form p-4 rounded-4 shadow-sm border bg-white h-100">
+        <form class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Full Name</label>
+            <input class="form-control form-control-lg" [(ngModel)]="model.FullName" name="fullName" placeholder="Enter your full name" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input class="form-control form-control-lg" [(ngModel)]="model.Email" name="email" placeholder="Enter your email" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Department</label>
+            <input class="form-control form-control-lg" [(ngModel)]="model.Department" name="department" placeholder="Enter your department" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Designation</label>
+            <input class="form-control form-control-lg" [(ngModel)]="model.Designation" name="designation" placeholder="Enter your designation" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Phone</label>
+            <input class="form-control form-control-lg" [(ngModel)]="model.Phone" name="phone" placeholder="Enter your phone number" />
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">New Password</label>
+            <input class="form-control form-control-lg" type="password" [(ngModel)]="passwordField" name="password" placeholder="Leave blank to keep current password" />
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

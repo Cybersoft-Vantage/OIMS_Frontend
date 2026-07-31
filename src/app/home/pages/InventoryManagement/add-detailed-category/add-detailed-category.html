@@ -1,0 +1,139 @@
+<div class="card category-editor-card">
+  <div class="card-header">
+    <div class="d-flex align-items-center justify-content-between">
+      <h5 class="mb-0">Categories</h5>
+      <button class="btn btn-sm btn-primary" type="button" (click)="clear()">+ Add Category</button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div class="row gx-4">
+      <div class="col-lg-4">
+        <div class="card h-100 category-tree-card shadow-sm">
+          <div class="card-body">
+            <!-- <h6 class="card-title mb-3">Categories</h6> -->
+            <ul class="list-group category-tree">
+              <li *ngFor="let c of categories" class="list-group-item border-0 px-0 py-2">
+                <div class="d-flex align-items-center justify-content-between">
+                  <button type="button" class="btn btn-link p-0 text-start category-name" [class.selected]="selectedCategoryId===c.DetailedCategoryId" (click)="edit(c)">{{ c.Name }}</button>
+                  <!-- <button class="btn btn-sm btn-outline-secondary" type="button" (click)="addChildTo(c)">Add Child</button> -->
+                </div>
+                <ul *ngIf="c.children && c.children.length" class="list-group mt-2 child-list">
+                  <li *ngFor="let child of c.children" class="list-group-item border-0 px-0 py-2 child-item">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <button type="button" class="btn btn-link p-0 text-start category-name" [class.selected]="selectedCategoryId===child.DetailedCategoryId" (click)="edit(child)">{{ child.Name }}</button>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card h-100 shadow-sm category-form-card">
+          <div class="card-body">
+            <h6 class="card-title mb-4">Add / Edit Category</h6>
+            <form #f="ngForm" (ngSubmit)="save(f)">
+
+              <div class="mb-3">
+                <label class="form-label">Parent Category</label>
+                <select name="ParentId" class="form-select" [(ngModel)]="model.ParentId" [disabled]="isParentSelectorDisabled">
+                  <option [ngValue]="null">-- none --</option>
+                  <option *ngFor="let c of flatCategories" [ngValue]="c.id">{{ c.name }}</option>
+                </select>
+                <div class="form-text">Leave empty to create a top-level category.</div>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Category Name *</label>
+                <input name="Name" class="form-control" [(ngModel)]="model.Name" required />
+              </div>
+
+
+              <div class="mb-3">
+                <label class="form-label">Category description</label>
+                <textarea name="Description" class="form-control" rows="3" [(ngModel)]="model.Description"></textarea>
+              </div>
+
+              <div class="mb-4">
+                <fieldset [disabled]="isCustomFieldsDisabled">
+                  <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div>
+                      <label class="form-label mb-0">Custom fields for this category</label>
+                      <div class="form-text">Extra attributes captured when adding an asset in this category.</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addField()">+ Add field</button>
+                  </div>
+                    <div *ngIf="saveError" class="mb-2"><small class="text-danger">{{ saveError }}</small></div>
+                    <div *ngIf="pendingOps && pendingOps.length" class="mb-2">
+                      <div *ngFor="let p of pendingOps" class="alert alert-warning py-2 d-flex align-items-center justify-content-between">
+                        <div class="small">Pending {{ p.type === 'add' ? 'add' : 'remove' }}: <strong>{{ p.field.key }}</strong></div>
+                        <div>
+                          <button class="btn btn-sm btn-link" type="button" (click)="undoPendingOp(p.id)">Undo</button>
+                          <button class="btn btn-sm btn-primary ms-2" type="button" (click)="confirmPendingOp(p.id)">Confirm</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="table-responsive">
+                    <table class="table table-borderless mb-0 align-middle">
+                      <thead>
+                        <tr>
+                          <th>Field name</th>
+                            <th>Type</th>
+                            <th class="text-center">Req</th>
+                            <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let f of customFields; index as i">
+                          <td>{{ f.key }}</td>
+                          <td>{{ f.type }}</td>
+                          <td class="text-center">{{ f.required ? 'Yes' : 'No' }}</td>
+                          <td class="text-end">
+                            <button class="btn btn-sm btn-link text-danger feather icon-trash-2" type="button" (click)="removeField(i)"></button>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <input class="form-control" [(ngModel)]="newField.key" name="newFieldKey" placeholder="Field name" />
+                          </td>
+                          <td>
+                            <select class="form-select" [(ngModel)]="newField.type" name="newFieldType">
+                              <option value="text">Text</option>
+                              <option value="number">Number</option>
+                              <option value="date">Date</option>
+                              <option value="boolean">Boolean</option>
+                            </select>
+                          </td>
+                          <td class="text-center">
+                            <input class="form-check-input" type="checkbox" [(ngModel)]="newField.required" name="newFieldReq" />
+                          </td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </fieldset>
+              </div>
+
+              <div class="d-flex justify-content-between gap-2 align-items-center">
+                <button class="btn btn-outline-secondary" type="button" (click)="clear()">Cancel</button>
+                <div class="d-flex align-items-center gap-2">
+                  <button *ngIf="editingId != null" class="btn btn-outline-danger me-2" type="button" (click)="deleteCategory(editingId)">Delete</button>
+                  <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+                    <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span *ngIf="!isSaving">Save</span>
+                    <span *ngIf="isSaving">Saving...</span>
+                  </button>
+                  <div *ngIf="saveMessage" class="ms-2 text-success small">{{ saveMessage }}</div>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

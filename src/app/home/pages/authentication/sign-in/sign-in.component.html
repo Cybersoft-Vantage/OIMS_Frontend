@@ -1,0 +1,151 @@
+<div class="sign-in-page">
+  <div class="sign-in-card">
+    <div class="sign-in-panel left-panel">
+      <div class="brand-panel">
+        <div class="brand-logo-wrapper">
+          <img src="assets/logo_oims.png" alt="OIMS Logo" class="brand-logo" />
+        </div>
+        <h1>IT Asset System</h1>
+        <p>Track, assign, and report on all your IT equipment in one secure place.</p>
+      </div>
+    </div>
+    <div class="sign-in-panel right-panel">
+      <div class="sign-in-form-card">
+        <div class="form-header">
+          <h3>Sign in</h3>
+          <p class="text-muted" *ngIf="!verificationStep()">Enter your user ID or email and password to access the dashboard.</p>
+          <p class="text-muted" *ngIf="verificationStep()">Enter the OTP sent to your email to finish verification.</p>
+        </div>
+
+        <form #loginForm="ngForm" (ngSubmit)="onSubmit($event)" novalidate>
+          <div *ngIf="error()" class="alert alert-danger mb-4">{{ error() }}</div>
+          <div *ngIf="info()" class="alert alert-info mb-4">{{ info() }}</div>
+
+          <div class="mb-3" *ngIf="!verificationStep()">
+            <label class="form-label">User ID or Email</label>
+            <input
+              type="text"
+              class="form-control"
+              name="identifier"
+              [(ngModel)]="identifier"
+              required
+              [class.is-invalid]="submitted() && !identifier"
+              placeholder="user123 or you@company.com"
+            />
+          </div>
+
+          <div class="mb-3" *ngIf="!verificationStep()">
+            <label class="form-label">Password</label>
+            <div class="password-row">
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                class="form-control"
+                name="password"
+                [(ngModel)]="password"
+                required
+                minlength="8"
+                [class.is-invalid]="submitted() && password.length < 8"
+                placeholder="Password"
+              />
+              <button type="button" class="btn toggle-password" (click)="togglePasswordVisibility()">
+                {{ showPassword() ? 'Hide' : 'Show' }}
+              </button>
+            </div>
+          </div>
+
+          <div class="mb-3" *ngIf="verificationStep()">
+            <label class="form-label otp-label">Verification Code</label>
+            <div class="otp-panel" (paste)="onOtpPaste($event)">
+              <div class="otp-grid" aria-label="One-time password input">
+              <input
+                id="otp-0"
+                type="text"
+                class="form-control otp-box"
+                [ngModel]="otpDigits[0]"
+                (input)="onOtpInput(0, $event)"
+                (keydown)="onOtpKeydown(0, $event)"
+                maxlength="1"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+              />
+              <input
+                id="otp-1"
+                type="text"
+                class="form-control otp-box"
+                [ngModel]="otpDigits[1]"
+                (input)="onOtpInput(1, $event)"
+                (keydown)="onOtpKeydown(1, $event)"
+                maxlength="1"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+              />
+              <input
+                id="otp-2"
+                type="text"
+                class="form-control otp-box"
+                [ngModel]="otpDigits[2]"
+                (input)="onOtpInput(2, $event)"
+                (keydown)="onOtpKeydown(2, $event)"
+                maxlength="1"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+              />
+              <input
+                id="otp-3"
+                type="text"
+                class="form-control otp-box"
+                [ngModel]="otpDigits[3]"
+                (input)="onOtpInput(3, $event)"
+                (keydown)="onOtpKeydown(3, $event)"
+                maxlength="1"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+              />
+              </div>
+              <div class="otp-hint">Enter the 4-digit code sent to your email.</div>
+            </div>
+            <div class="otp-actions mt-2">
+              <button type="button" class="btn btn-link p-0 otp-resend-link" [disabled]="resendCooldown() > 0 || isLoading()" (click)="resendOtp()">
+                Resend OTP
+              </button>
+              <small class="text-muted" *ngIf="resendCooldown() > 0">
+                You can resend in {{ resendCooldown() }}s
+              </small>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mb-4 remember-row" *ngIf="!verificationStep()">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="rememberMe"
+                [(ngModel)]="rememberMe"
+                name="rememberMe"
+              />
+              <label class="form-check-label" for="rememberMe">Remember me</label>
+            </div>
+            <!-- <a class="forgot-link" href="#">Forgot password?</a> -->
+          </div>
+
+          <button class="btn btn-primary btn-block w-100 mb-3" type="submit" [disabled]="isLoading()">
+            <span *ngIf="isLoading()" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            {{ verificationStep() ? 'Verify OTP' : 'Sign in' }}
+          </button>
+
+          <button *ngIf="verificationStep()" type="button" class="btn btn-link w-100 text-decoration-none" (click)="backToLogin()">
+            Back to login
+          </button>
+
+          <!-- <div class="divider"><span>or</span></div>
+
+          <button type="button" class="btn btn-outline-secondary btn-block w-100">Sign in with company account (SSO)</button> -->
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

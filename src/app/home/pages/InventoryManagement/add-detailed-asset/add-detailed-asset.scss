@@ -1,0 +1,128 @@
+/* Basic spacing */
+
+.card .table td { vertical-align: middle; }
+
+.info-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+//   background: rgba(13, 110, 253, 0.08);
+  color: #0d6efd;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.info-icon:hover {
+  background: rgba(13, 110, 253, 0.16);
+}
+
+.info-popover {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 16rem;
+  max-width: 24rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.info-wrapper:hover .info-popover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.popover-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.popover-content {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+//   background: rgba(13, 110, 253, 0.08);
+  color: #0d6efd;
+  cursor: default;
+  transition: background-color 0.2s ease;
+}
+
+.info-icon:hover {
+  background: rgba(13, 110, 253, 0.16);
+}
+
+.info-icon i {
+  font-size: 0.9rem;
+}
+
+.info-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+.info-icon:hover {
+  background: rgba(13, 110, 253, 0.16);
+}
+
+.info-popover {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 12rem;
+  max-width: 24rem;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.info-wrapper:hover .info-popover {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.popover-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.popover-content {
+  font-size: 0.85rem;
+  line-height: 1.4;
+}

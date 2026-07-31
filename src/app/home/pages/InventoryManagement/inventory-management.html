@@ -1,0 +1,54 @@
+<div class="card">
+    <div class="page-header">
+        <div class="page-block">
+            <div class="row align-items-center">
+                <div class="col-md-12">
+                    <h5 class="page-header-title mb-0">Inventory Management</h5>
+                    <nav aria-label="breadcrumb" class="mt-2">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a routerLink="/">OIMS Management</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Inventory Management</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-body">
+
+
+        <div class="row mt-3">
+            <div class="col-lg-3">
+                <div class="nav flex-column nav-pills me-3 side-pills" role="tablist" aria-orientation="vertical">
+                    <!-- <a class="nav-link" routerLink="/inventory/categories" routerLinkActive="active">Categories</a>
+          <a class="nav-link" routerLink="/inventory/subcategories" routerLinkActive="active">Subcategories</a>
+          <a class="nav-link" routerLink="/inventory/statuses" routerLinkActive="active">Asset Status</a>
+          <a class="nav-link" routerLink="/inventory/assets" routerLinkActive="active">Assets</a>
+          <a class="nav-link" routerLink="/inventory/components" routerLinkActive="active">Asset Components</a>
+          <a class="nav-link" routerLink="/inventory/assign" routerLinkActive="active">Assign Asset</a>
+          <a class="nav-link" routerLink="/inventory/assignments" routerLinkActive="active">Asset Assignments</a>
+          <a class="nav-link" routerLink="/inventory/history" routerLinkActive="active">Asset History</a> -->
+                    <a class="nav-link" routerLink="/inventory/detailed-categories"
+                        routerLinkActive="active">Categories</a>
+                    <a class="nav-link" routerLink="/inventory/manage-asset" routerLinkActive="active">Manage Assets</a>
+                    <!-- <a class="nav-link" routerLink="/inventory/assign-detailed" routerLinkActive="active">Assign Detailed Asset</a> -->
+                    <!-- <a class="nav-link" routerLink="/inventory/detailed-assignments" routerLinkActive="active">Detailed Assignments</a> -->
+                    <!-- <a class="nav-link" routerLink="/inventory/detailed-history" routerLinkActive="active">Detailed History</a> -->
+                    <a class="nav-link" routerLink="/inventory/procurement" routerLinkActive="active">Procurement</a>
+                    <a class="nav-link" routerLink="/inventory/licensing" routerLinkActive="active">Licensing</a>
+                    <a class="nav-link" routerLink="/inventory/maintenance" routerLinkActive="active">Maintenance</a>
+                    <a class="nav-link" routerLink="/inventory/restore" routerLinkActive="active">Restore</a>
+                    <a class="nav-link" routerLink="/inventory/reports" routerLinkActive="active">Reports</a>
+                    <!-- <a class="nav-link" routerLink="/inventory/consumables" routerLinkActive="active">Consumables</a>  -->
+                    <!-- <a class="nav-link" routerLink="/inventory/alerts" routerLinkActive="active">Alerts</a> -->
+                    <!-- <a class="nav-link" routerLink="/inventory/admin" routerLinkActive="active">Inventory Admin</a> -->
+                    <!-- <a class="nav-link" routerLink="/inventory/import" routerLinkActive="active">Import</a> -->
+                </div>
+            </div>
+            <div class="col-lg-9">
+                <router-outlet></router-outlet>
+            </div>
+        </div>
+    </div>
+</div>

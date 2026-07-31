@@ -1,0 +1,224 @@
+<!-- <div class="card"> -->
+  <div class="card-header">
+    <ul class="nav nav-tabs mb-2">
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'addasset'" type="button"
+          (click)="setActiveTab('addasset')">Add Asset</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'showAsset'" type="button"
+          (click)="setActiveTab('showAsset')">Show Asset</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'assignasset'" type="button"
+          (click)="setActiveTab('assignasset')">Assign Asset</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'assignmulti'" type="button"
+          (click)="setActiveTab('assignmulti')">Assign Multiple Assets</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'returnasset'" type="button"
+          (click)="setActiveTab('returnasset')">Return Asset</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'assethistory'" type="button"
+          (click)="setActiveTab('assethistory')">Asset History</button></li>
+      <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'import'" type="button"
+          (click)="setActiveTab('import')">Import</button></li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div *ngIf="activeTab === 'addasset'">
+      <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0 mt-3">Add Detailed Asset</h5>
+        </div>
+        <div class="card-body">
+        <form #f="ngForm" (ngSubmit)="submit(f)">
+          <div class="row">
+            
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Category <span class="text-danger">*</span></label>
+              <select name="DetailedCategoryId" #categoryModel="ngModel" class="form-select" [(ngModel)]="model.DetailedCategoryId"
+                (ngModelChange)="onCategoryChange($event)" required [ngClass]="{'is-invalid': categoryModel.invalid && categoryModel.touched}">
+                <option [ngValue]="undefined">-- select --</option>
+                <option *ngFor="let c of topCategories" [ngValue]="c.DetailedCategoryId">{{c.Name}}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="categoryModel.invalid && categoryModel.touched">
+                Category is required.
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Sub Category</label>
+              <select name="SubCategory" #subCategoryModel="ngModel" class="form-select" [(ngModel)]="model.SubCategory"
+                (ngModelChange)="onSubCategoryChange($event)" required [ngClass]="{'is-invalid': subCategoryModel.invalid && subCategoryModel.touched}">
+                <option [ngValue]="''">-- select --</option>
+                <option *ngFor="let child of subCategories" [ngValue]="child.Name">{{child.Name}}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="subCategoryModel.invalid && subCategoryModel.touched">
+                Sub-Category is required.
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <input name="Name" #nameModel="ngModel" [(ngModel)]="model.Name" required class="form-control" [ngClass]="{'is-invalid': nameModel.invalid && nameModel.touched}" />
+              <div class="invalid-feedback" *ngIf="nameModel.invalid && nameModel.touched">
+                Name is required.
+              </div>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Asset Tag</label>
+              <input name="AssetTag" [(ngModel)]="model.AssetTag" class="form-control" readonly />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Make / Model</label>
+              <input name="MakeModel" [(ngModel)]="model.MakeModel" class="form-control" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Serial No</label>
+              <input name="SerialNo" [(ngModel)]="model.SerialNo" class="form-control" />
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Specifications</label>
+              <textarea name="Specifications" [(ngModel)]="model.Specifications" class="form-control"></textarea>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Status</label>
+              <select name="Status" class="form-select" [(ngModel)]="model.Status">
+                <option [ngValue]="undefined">-- select --</option>
+                <option *ngFor="let s of statuses" [ngValue]="s.StatusName">{{s.StatusName}}</option>
+              </select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Purchase Cost</label>
+              <input name="PurchaseCost" type="number" [(ngModel)]="model.PurchaseCost" class="form-control" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Purchase Date</label>
+              <input name="PurchaseDate" type="date" [(ngModel)]="model.PurchaseDate" class="form-control" />
+            </div>
+
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Warranty End</label>
+              <input name="WarrantyEnd" type="date" [(ngModel)]="model.WarrantyEnd" class="form-control" />
+            </div>
+
+            <div class="col-md-12 mb-3">
+              <label class="form-label">Custom Values</label>
+              <div *ngIf="customFields && customFields.length; else rawJson">
+                <div class="mb-2"><small class="text-muted">Fields from: <strong>
+                      {{ currentCustomSource === 'child' ? (model.SubCategory || 'Subcategory') : (currentCustomSource
+                      === 'parent' ? getCategoryName(model.DetailedCategoryId) : 'None') }}
+                    </strong></small></div>
+                <div class="row">
+                  <div *ngFor="let f of customFields" class="col-md-6 mb-3">
+                    <label class="form-label">{{f.key}}</label>
+                    <input *ngIf="f.type==='text' || f.type==='number'" [type]="f.type==='number'? 'number':'text'"
+                      class="form-control" [(ngModel)]="customValues[f.key]" [name]="controlName(f.key)" />
+                    <input *ngIf="f.type==='date'" type="date" class="form-control" [(ngModel)]="customValues[f.key]"
+                      [name]="controlName(f.key)" />
+                    <select *ngIf="f.type==='boolean'" class="form-select" [(ngModel)]="customValues[f.key]"
+                      [name]="controlName(f.key)">
+                      <option [ngValue]="true">True</option>
+                      <option [ngValue]="false">False</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <ng-template #rawJson>
+                <label class="form-text">No custom schema defined for this category. You may provide raw JSON
+                  below.</label>
+                <textarea name="CustomValues" [(ngModel)]="model.CustomValues" class="form-control"
+                  placeholder='{"cpu":"i7","ram":"16GB"}'></textarea>
+              </ng-template>
+            </div>
+
+            <div class="col-md-12">
+              <button class="btn btn-primary">Save</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div *ngIf="activeTab === 'showAsset'">
+    <div *ngIf="selectedAssetId; else assetList">
+      <app-detailed-asset-detail></app-detailed-asset-detail>
+    </div>
+
+    <ng-template #assetList>
+        <div class="card">
+        <div class="card-header">
+          <h5 class="mb-0 mt-3">Existing Detailed Assets</h5>
+        </div>
+        <div class="card-body">
+      <table class="table table-striped">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Tag</th>
+            <th>Category</th>
+            <th>Serial</th>
+            <th>Model</th>
+            <th>Info</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let a of assets">
+            <td>{{a.Name}}</td>
+            <td>{{a.AssetTag}}</td>
+            <td>{{ getCategoryName(a.DetailedCategoryId) }}</td>
+            <td>{{a.SerialNo}}</td>
+            <td>{{a.MakeModel}}</td>
+            <td class="text-justify">
+              <div class="info-wrapper me-2 d-inline-block">
+                <span class="info-icon" title="Details">i</span>
+                <div class="info-popover">
+                  <div class="popover-title">Details</div>
+                  <div class="popover-content">
+                    <div *ngFor="let line of getCustomValuesLines(a)">{{line}}</div>
+                    <div *ngIf="!getCustomValuesLines(a).length" class="text-muted">No additional info</div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="viewAsset(a.DetailedAssetId)">View</button>
+              <button class="btn btn-sm btn-outline-secondary me-2" type="button" (click)="editAsset(a.DetailedAssetId)">Edit</button>
+              <button class="btn btn-sm btn-danger" type="button" (click)="deleteAsset(a.DetailedAssetId)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+        </div>
+        </div>
+    </ng-template>
+  </div>
+
+  <div *ngIf="activeTab === 'assignasset'">
+    <app-assign-detailed-asset></app-assign-detailed-asset>
+  </div>
+  <div *ngIf="activeTab === 'assignmulti'">
+    <app-assignments-detailed-list></app-assignments-detailed-list>
+</div>
+  <div *ngIf="activeTab === 'returnasset'">
+    <app-detailed-assignments-list></app-detailed-assignments-list>
+  </div>
+  <div *ngIf="activeTab === 'assethistory'">
+    <app-detailed-history></app-detailed-history>
+  </div>
+  <div *ngIf="activeTab === 'import'">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div>
+          <h5 class="mb-0">Import Detailed Assets</h5>
+          <p class="text-muted mb-0">Download the template or upload a file to add bulk detailed assets.</p>
+        </div>
+        <button class="btn btn-outline-primary btn-sm" type="button" (click)="downloadImportTemplate()">Download Template</button>
+      </div>
+      <div class="card-body">
+        <app-inventory-import></app-inventory-import>
+      </div>
+    </div>
+  </div>
+</div>

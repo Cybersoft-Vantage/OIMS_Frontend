@@ -1,0 +1,54 @@
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <h5 class="mb-0">Import</h5>
+      <p class="text-muted mb-0">Upload spreadsheet data to bulk import inventory records.</p>
+    </div>
+    <button class="btn btn-primary btn-sm" (click)="upload()">Upload</button>
+  </div>
+  <div class="card-body">
+    <div class="mb-3">
+      <input type="file" class="form-control" (change)="onFileSelected($event)" accept=".csv,.xlsx" />
+    </div>
+    <div *ngIf="fileValidationError" class="alert alert-warning">
+      {{ fileValidationError }}
+    </div>
+    <div *ngIf="selectedFile" class="alert alert-secondary">
+      Selected file: {{ selectedFile.name }}
+    </div>
+
+    <div *ngIf="previewHeaders.length" class="mb-3">
+      <h6>Preview (first {{ previewLimit }} rows)</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+          <thead>
+            <tr>
+              <th *ngFor="let header of previewHeaders">{{ header }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of previewRows">
+              <td *ngFor="let header of previewHeaders">{{ row[header] }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="small text-muted">Preview is only available for CSV files.</div>
+    </div>
+
+    <div *ngIf="resultMessage" class="alert alert-success mt-3">
+      {{ resultMessage }}
+    </div>
+    <div *ngIf="errors.length" class="mt-3">
+      <div class="alert alert-danger">
+        <div *ngIf="errors.length === 1">{{ errors[0].error }}</div>
+        <div *ngIf="errors.length > 1">
+          <p class="mb-1">Import errors:</p>
+          <ul class="mb-0">
+            <li *ngFor="let error of errors">Row {{ error.row || 'N/A' }}: {{ error.error }}</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

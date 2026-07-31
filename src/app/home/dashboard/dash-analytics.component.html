@@ -1,0 +1,189 @@
+<div class="dashboard-shell">
+  <div class="hero-card">
+    <div class="row g-4 align-items-center">
+      <div class="col-lg-8">
+        <div class="hero-badge">Inventory operations overview</div>
+        <h2 class="hero-title">Live Inventory Command Center Powered by OIMS Records.</h2>
+        <p class="hero-text">
+          Monitor real assets, active assignments, renewals, low-stock components, and urgent actions from one professional dashboard.
+        </p>
+        <div class="hero-actions">
+          <button class="btn btn-primary btn-sm" [routerLink]="'/inventory'">Open Inventory</button>
+          <button class="btn btn-outline-light btn-sm" [routerLink]="'/inventory/licensing'">Review Renewals</button>
+        </div>
+      </div>
+      <!-- <div class="col-lg-4">
+        <div class="hero-side-card">
+          <div class="small-label">Last synced</div>
+          <div class="hero-kpi">{{ lastUpdated }}</div>
+        </div>
+      </div> -->
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div>
+      <div class="section-eyebrow">Dashboard View</div>
+      <!-- <h3 class="section-title">Operational snapshot</h3> -->
+    </div>
+    <div class="status-pill">Live •</div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      @for (item of [1, 2, 3, 4]; track item) {
+        <div class="loading-card"></div>
+      }
+    </div>
+  } @else {
+    <div class="row g-4 mt-1">
+      @for (card of summaryCards; track card.title) {
+        <div class="col-12 col-sm-6 col-xl-3">
+          <app-card [hidHeader]="true" cardClass="metric-card h-100 dashboard-card">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="metric-label">{{ card.title }}</div>
+                <div class="metric-value">{{ card.value }}</div>
+                <div class="metric-trend">{{ card.trend }}</div>
+              </div>
+              <div class="metric-icon {{ card.accent }}">
+                <i class="feather {{ card.icon }}"></i>
+              </div>
+            </div>
+          </app-card>
+        </div>
+      }
+    </div>
+  }
+
+  <div class="row g-4 mt-1">
+  
+    <div class="col-xl-8">
+      <app-card cardTitle="Inventory trend" cardClass="dashboard-card chart-card h-100">
+        @if (showCharts) {
+          <apx-chart
+            #inventoryTrendChart
+            [series]="chartOptions.series!"
+            [chart]="chartOptions.chart!"
+            [stroke]="chartOptions.stroke!"
+            [dataLabels]="chartOptions.dataLabels!"
+            [xaxis]="chartOptions.xaxis!"
+            [colors]="chartOptions.colors!"
+            [fill]="chartOptions.fill!"
+            [legend]="chartOptions.legend!"
+            [yaxis]="chartOptions.yaxis!"
+            [grid]="chartOptions.grid!"
+          ></apx-chart>
+        }
+      </app-card>
+    </div>
+    <div class="col-xl-4">
+      <app-card cardTitle="Asset health" cardClass="dashboard-card chart-card h-100">
+        @if (showCharts) {
+          <apx-chart
+            #assetHealthChart
+            [series]="statusChartOptions.series!"
+            [chart]="statusChartOptions.chart!"
+            [labels]="statusChartOptions.labels!"
+            [legend]="statusChartOptions.legend!"
+            [colors]="statusChartOptions.colors!"
+            [plotOptions]="statusChartOptions.plotOptions!"
+            [tooltip]="statusChartOptions.tooltip!"
+            [dataLabels]="statusChartOptions.dataLabels!"
+          ></apx-chart>
+        }
+      </app-card>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-xl-7">
+      <app-card cardTitle="Low-stock alerts" cardClass="dashboard-card pair-card h-100">
+        <ul class="renewal-list">
+          @for (item of lowStockAlerts; track item.name) {
+            <li class="renewal-item">
+              <div>
+                <div class="renewal-name">{{ item.name }}</div>
+                <div class="renewal-owner">{{ item.detail }}</div>
+              </div>
+              <span class="badge bg-danger">{{ item.quantity }} left</span>
+            </li>
+          }
+          @if (!lowStockAlerts.length) {
+            <li class="renewal-item">
+              <div class="renewal-owner">No low-stock components detected.</div>
+            </li>
+          }
+        </ul>
+      </app-card>
+    </div>
+    <div class="col-xl-5">
+      <app-card cardTitle="Critical items" cardClass="dashboard-card pair-card h-100">
+        <ul class="activity-list">
+          @for (item of criticalItems; track item.title) {
+            <li class="activity-item-alt">
+              <div class="activity-dot"></div>
+              <div class="activity-content-dot">
+                <div class="activity-title">{{ item.title }}</div>
+                <div class="activity-detail">{{ item.detail }}</div>
+                <div class="activity-time">{{ item.severity | titlecase }} priority</div>
+              </div>
+            </li>
+          }
+        </ul>
+      </app-card>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-xl-7">
+      <app-card cardTitle="Upcoming renewals" cardClass="dashboard-card pair-card h-100">
+        <ul class="renewal-list">
+          @for (item of renewals; track item.name) {
+            <li class="renewal-item">
+              <div>
+                <div class="renewal-name">{{ item.name }}</div>
+                <div class="renewal-owner">{{ item.owner }}</div>
+              </div>
+              <span class="badge" [ngClass]="item.severity === 'warning' ? 'bg-warning text-dark' : item.severity === 'info' ? 'bg-info text-white' : 'bg-success'">{{ item.due }}</span>
+            </li>
+          }
+        </ul>
+      </app-card>
+    </div>
+    <div class="col-xl-5">
+      <app-card cardTitle="Assignment heatmap" cardClass="dashboard-card pair-card h-100">
+        <ul class="activity-list">
+          @for (item of heatmap; track item.department) {
+            <li class="activity-item-alt">
+              <div class="activity-dot"></div>
+              <div class="activity-content-dot">
+                <div class="activity-title">{{ item.department }}</div>
+                <div class="activity-detail">{{ item.count }} assignment(s) recorded</div>
+              </div>
+            </li>
+          }
+        </ul>
+      </app-card>
+    </div>
+  </div>
+
+  <div class="row g-4 mt-1">
+    <div class="col-12">
+      <app-card cardTitle="Recent activity" cardClass="dashboard-card activity-card h-100">
+        <ul class="activity-list">
+          @for (item of activityFeed; track item.title) {
+            <li class="activity-item-alt">
+              <div class="activity-dot"></div>
+              <div class="activity-content-dot">
+                <div class="activity-title">{{ item.title }}</div>
+                <div class="activity-detail">{{ item.detail }}</div>
+                <div class="activity-time">{{ item.time }}</div>
+              </div>
+            </li>
+          }
+        </ul>
+      </app-card>
+    </div>
+  </div>
+</div>

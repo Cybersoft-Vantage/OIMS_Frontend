@@ -1,0 +1,172 @@
+<div *ngIf="activeTab === 'overview'">
+    <div *ngIf="model" class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+
+                <h5 class="mb-0"><span><button class="btn btn-sm mb-0" type="button" (click)="closeEditor()"
+                            title="Back to List">
+                            <i class="feather icon-arrow-left"></i>
+                        </button></span> Edit Asset - {{ model.Name }}</h5>
+                <p class="text-muted mb-0 ml-2">Tag: {{ model.AssetTag || '—' }} · Status: {{ model.Status || '—' }}</p>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <form #f="ngForm" (ngSubmit)="submit(f)">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Asset Tag</label>
+                        <input class="form-control" name="AssetTag" [(ngModel)]="model.AssetTag" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <input class="form-control" name="Name" #editNameModel="ngModel" [(ngModel)]="model.Name" required [ngClass]="{'is-invalid': editNameModel.invalid && editNameModel.touched}" />
+                        <div class="invalid-feedback" *ngIf="editNameModel.invalid && editNameModel.touched">
+                            Name is required.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Category <span class="text-danger">*</span></label>
+                        <select name="DetailedCategoryId" #categoryModel="ngModel" class="form-select"
+                            [(ngModel)]="model.DetailedCategoryId" (ngModelChange)="onCategoryChange($event)" required [ngClass]="{'is-invalid': categoryModel.invalid && categoryModel.touched}">
+                            <option [ngValue]="undefined">-- select --</option>
+                            <option *ngFor="let c of categories" [ngValue]="c.DetailedCategoryId">{{c.Name}}</option>
+                        </select>
+                        <div class="invalid-feedback" *ngIf="categoryModel.invalid && categoryModel.touched">Category is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Subcategory <span class="text-danger">*</span></label>
+                        <select name="SubCategory" #subCategoryModel="ngModel" class="form-select"
+                            [(ngModel)]="model.SubCategory" (ngModelChange)="onSubCategoryChange($event)" required [ngClass]="{'is-invalid': subCategoryModel.invalid && subCategoryModel.touched}">
+                            <option [ngValue]="undefined">-- select --</option>
+                            <option *ngFor="let sc of subCategories" [ngValue]="sc.Name">{{sc.Name}}</option>
+                        </select>
+                        <div class="invalid-feedback" *ngIf="subCategoryModel.invalid && subCategoryModel.touched">Subcategory is required.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Make/Model</label>
+                        <input class="form-control" name="MakeModel" [(ngModel)]="model.MakeModel" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Serial No</label>
+                        <input class="form-control" name="SerialNo" [(ngModel)]="model.SerialNo" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Status</label>
+                        <select name="Status" class="form-control" [(ngModel)]="model.Status">
+                            <option [ngValue]="undefined">-- select --</option>
+                            <option *ngFor="let s of statuses" [ngValue]="s.StatusName">{{s.StatusName}}</option>
+                        </select>
+                        <!-- <input class="form-control" name="Status" [(ngModel)]="model.Status" /> -->
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Purchase Cost</label>
+                        <input type="number" class="form-control" name="PurchaseCost"
+                            [(ngModel)]="model.PurchaseCost" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" name="PurchaseDate" [(ngModel)]="model.PurchaseDate" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Warranty End</label>
+                        <input type="date" class="form-control" name="WarrantyEnd" [(ngModel)]="model.WarrantyEnd" />
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Specifications</label>
+                        <textarea class="form-control" rows="4" name="Specifications"
+                            [(ngModel)]="model.Specifications"></textarea>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Custom Values</label>
+                        <div *ngIf="customValuesDisplay.length; else customJson">
+                            <div class="row g-2">
+                                <div class="col-md-4" *ngFor="let item of customValuesDisplay">
+                                    <div class="border rounded p-2 mb-2">
+                                        <div class="fw-semibold">{{ item.key }}</div>
+                                        <div class="text-muted">{{ item.value }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <ng-template #customJson>
+                            <textarea class="form-control" rows="3" [value]="model.CustomValues || '{}'"
+                                disabled></textarea>
+                        </ng-template>
+                    </div>
+                </div>
+                <div class="mt-3 text-end">
+                    <button class="btn btn-secondary me-2" type="button" (click)="closeEditor()">Cancel</button>
+                    <button class="btn btn-primary" type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="activeTab === 'history'">
+    <div *ngIf="model" class="card">
+
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0"><span><button class="btn btn-sm mb-0" type="button" (click)="closeEditor()"
+                            title="Back to List">
+                            <i class="feather icon-arrow-left"></i>
+                        </button></span> {{ model.Name }} - History</h5>
+                <p class="text-muted mb-0 ml-2">Tag: {{ model.AssetTag || '—' }} · Status: {{ model.Status || '—' }}</p>
+            </div>
+        </div>
+        <div class="card-body">
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <input class="form-control form-control-sm" placeholder="Search history" [(ngModel)]="historySearch"
+                        (ngModelChange)="resetHistoryPage()" />
+                </div>
+            </div>
+            <div class="table-responsive table-scroll-x">
+                <table class="table table-hover align-middle table-nowrap">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                            <th>Employee</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr *ngFor="let h of pagedHistory; let i = index">
+                            <td>{{ i + 1 + ((historyPage - 1) * historyPageSize) }}</td>
+                            <td>{{ h.ActionDate | date:'short' }}</td>
+                            <td>{{ h.Action }}</td>
+                            <td>{{ h.EmployeeName || '—' }}</td>
+                            <td>{{ getHistoryDetail(h) }}</td>
+                        </tr>
+                        <tr *ngIf="!filteredHistory.length">
+                            <td colspan="5" class="text-center text-muted">No history entries found for this asset.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted">Showing page {{ historyPage }} of {{ totalHistoryPages }}</div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" [class.disabled]="historyPage === 1"><button class="page-link"
+                                type="button" (click)="prevHistoryPage()">Prev</button></li>
+                        <li class="page-item" *ngFor="let page of [].constructor(totalHistoryPages); let idx = index"
+                            [class.active]="historyPage === idx + 1">
+                            <button class="page-link" type="button" (click)="gotoHistoryPage(idx + 1)">{{ idx + 1
+                                }}</button>
+                        </li>
+                        <li class="page-item" [class.disabled]="historyPage === totalHistoryPages"><button
+                                class="page-link" type="button" (click)="nextHistoryPage()">Next</button></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div *ngIf="!model" class="text-center text-muted">Asset not found.</div>
