@@ -159,7 +159,11 @@
 .btn-block {
   display: block;
 }
-
+.btn-primary{
+  background-color: #0f4f8b;
+  border-color: #0f4f8b;
+  color: #fff;
+}
 .otp-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(48px, 1fr));
