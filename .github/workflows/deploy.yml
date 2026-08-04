@@ -1,24 +1,19 @@
 name: Deploy Frontend
-
 on:
   push:
     branches: [main]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install & build
         run: |
           npm ci
           npx ng build --configuration production
-
       - name: Copy build to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -26,9 +21,18 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "dist"
-          target: "/home/inventory/frontend"
-          strip_components: 2
-
+          target: "/home/inventory/frontend_temp"
+          overwrite: true
+      - name: Move build into place
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            rm -rf /home/inventory/frontend/*
+            cp -r /home/inventory/frontend_temp/dist/* /home/inventory/frontend/
+            rm -rf /home/inventory/frontend_temp
       - name: Reload nginx
         uses: appleboy/ssh-action@v1.0.3
         with:
