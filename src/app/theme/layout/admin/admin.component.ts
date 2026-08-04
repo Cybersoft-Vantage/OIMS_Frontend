@@ -9,6 +9,7 @@ import { NavigationComponent } from './navigation/navigation.component';
 import { BreadcrumbComponent } from '../../shared/components/breadcrumb/breadcrumb.component';
 import { Footer } from './footer/footer';
 import { LayoutStateService } from '../../shared/service/layout-state.service';
+import { ThemeService } from 'src/app/services/theme.service';
 
 @Component({
   selector: 'app-admin',
@@ -18,6 +19,7 @@ import { LayoutStateService } from '../../shared/service/layout-state.service';
 })
 export class AdminComponent {
   private layoutState = inject(LayoutStateService);
+  private themeService = inject(ThemeService);
 
   // public props
   navCollapsed!: boolean;
@@ -28,6 +30,7 @@ export class AdminComponent {
   constructor() {
     this.windowWidth = window.innerWidth;
     this.navCollapsedMob = false;
+    this.themeService.initialize();
   }
 
   @HostListener('window:resize', ['$event'])

@@ -198,6 +198,16 @@ const routes: Routes = [
                 canActivate: [authGuard]
               }
         ]
+      },
+      {
+        path: 'settings',
+        children: [
+          {
+            path: 'theme',
+            loadComponent: () => import('./home/pages/Settings/theme-management/theme-management.component').then((c) => c.ThemeManagementComponent),
+            canActivate: [authGuard]
+          }
+        ]
       }
     ]
   },

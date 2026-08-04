@@ -93,7 +93,6 @@ export class SignInComponent implements OnDestroy {
         this.isLoading.set(false);
         const message = e?.error?.detail || e?.error?.message || 'Login failed. Please check your credentials.';
         this.error.set(message);
-        this.cd.detectChanges();
       }
     });
   }

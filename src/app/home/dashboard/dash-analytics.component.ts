@@ -73,7 +73,7 @@ export class DashAnalyticsComponent implements OnInit {
     this.isLoading = true;
 
     forkJoin({
-      assets: this.crud.getAssets().pipe(catchError(() => of([]))),
+      // assets: this.crud.getAssets().pipe(catchError(() => of([]))),
       detailedAssets: this.crud.getDetailedAssets().pipe(catchError(() => of([]))),
       // assignments: this.crud.getAssetAssignments(),
       assignments: this.crud.getDetailedAssignments().pipe(catchError(() => of([]))),
@@ -91,9 +91,9 @@ export class DashAnalyticsComponent implements OnInit {
         const components = data.components || [];
         const procurements = data.procurements || [];
         const licenses = data.licenses || [];
-
-        const availableAssets = assignments.filter((assignment: any) => assignment.IsReturned == true );
+        
         const assignedAssets = assignments.filter((assignment: any) => assignment.IsReturned == false);
+        const availableAssets = detailedAssets.length - assignedAssets.length;
         const maintenanceAssets = detailedAssets.filter((detailedAssets: any) => /maintenance|damaged|repair|warning/i.test(String(detailedAssets.Status || '')));
         const reviewAssets = detailedAssets.filter((detailedAssets: any) => /review|needs|pending/i.test(String(detailedAssets.Status || '')));
 
@@ -101,7 +101,7 @@ export class DashAnalyticsComponent implements OnInit {
         const inventoryAssets = [...detailedAssets];
  
         this.summaryCards = [
-          { title: 'Total Assets', value: String(assignments.length), trend: `${availableAssets.length} available now`, icon: 'icon-box', accent: 'bg-primary' },
+          { title: 'Total Assets', value: String(detailedAssets.length), trend: `${availableAssets} available now`, icon: 'icon-box', accent: 'bg-primary' },
           { title: 'Assigned', value: String(assignedAssets.length), trend: `${assignments.length} assignment records`, icon: 'icon-user', accent: 'bg-success' },
           { title: 'Maintenance', value: String(maintenanceAssets.length), trend: `${reviewAssets.length} need review`, icon: 'icon-tool', accent: 'bg-warning' },
           { title: 'Procurement', value: String(procurements.length), trend: `${procurements.filter((item: any) => String(item.Status || '').toLowerCase() === 'pending').length} pending`, icon: 'icon-shopping-cart', accent: 'bg-danger' }
