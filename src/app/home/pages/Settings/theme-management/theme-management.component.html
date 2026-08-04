@@ -1,0 +1,33 @@
+<div class="theme-page card border-0 shadow-sm">
+  <div class="card-body p-4 p-lg-5">
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-4">
+      <div>
+        <h4 class="mb-1">Choose Theme</h4>
+        <p class="text-muted mb-0">Switch the overall project appearance and restore the default theme at any time.</p>
+      </div>
+      <button type="button" class="btn btn-outline-secondary" (click)="restoreDefault()">Restore Default</button>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-6 col-xl-4" *ngFor="let theme of themes">
+        <button
+          type="button"
+          class="theme-card w-100 text-start"
+          [class.active]="themeService.isActive(theme.id)"
+          (click)="chooseTheme(theme.id)"
+        >
+          <span class="theme-preview">
+            <span class="theme-swatch" [style.background]="theme.preview[0]"></span>
+            <span class="theme-swatch" [style.background]="theme.preview[1]"></span>
+            <span class="theme-swatch" [style.background]="theme.preview[2]"></span>
+          </span>
+          <span class="theme-copy">
+            <span class="theme-name">{{ theme.name }}</span>
+            <span class="theme-description">{{ theme.description }}</span>
+          </span>
+          <span class="theme-badge" *ngIf="themeService.isActive(theme.id)">Active</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

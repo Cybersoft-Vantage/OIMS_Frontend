@@ -60,3 +60,569 @@ File: style.css
 	-webkit-overflow-scrolling: touch;
 }
 
+:root,
+html[data-theme='light'],
+body[data-theme='light'] {
+	--app-bg: #f6f7fb;
+	--app-surface: #ffffff;
+	--app-card: #ffffff;
+	--app-text: #1f2937;
+	--app-muted: #6b7280;
+	--app-border: #dbe2ea;
+	--app-accent: #0b4eb3;
+	--app-accent-contrast: #ffffff;
+	--app-nav-bg: #ffffff;
+	--app-header-bg: #0b4eb3;
+	--app-header-text: #ffffff;
+	--app-table-stripe: #f8fafc;
+}
+
+html[data-theme='dark'],
+body[data-theme='dark'] {
+	--app-bg: #111827;
+	--app-surface: #1f2937;
+	--app-card: #18212f;
+	--app-text: #e5edf7;
+	--app-muted: #9ca3af;
+	--app-border: #374151;
+	--app-accent: #60a5fa;
+	--app-accent-contrast: #0b1220;
+	--app-nav-bg: #172030;
+	--app-header-bg: #0f172a;
+	--app-header-text: #f8fafc;
+	--app-table-stripe: #243041;
+}
+
+html[data-theme='ocean'],
+body[data-theme='ocean'] {
+	--app-bg: #e8f5f3;
+	--app-surface: #f7fffd;
+	--app-card: #ffffff;
+	--app-text: #164e63;
+	--app-muted: #4b7081;
+	--app-border: #bddcd8;
+	--app-accent: #0f766e;
+	--app-accent-contrast: #ffffff;
+	--app-nav-bg: #dff3ef;
+	--app-header-bg: #0f766e;
+	--app-header-text: #f0fdfa;
+	--app-table-stripe: #eef9f7;
+}
+
+html[data-theme='forest'],
+body[data-theme='forest'] {
+	--app-bg: #edf7ed;
+	--app-surface: #f8fff8;
+	--app-card: #ffffff;
+	--app-text: #1f3b24;
+	--app-muted: #5d7460;
+	--app-border: #cfe2cf;
+	--app-accent: #2f6b3b;
+	--app-accent-contrast: #ffffff;
+	--app-nav-bg: #e1f0e2;
+	--app-header-bg: #2f6b3b;
+	--app-header-text: #f6fff6;
+	--app-table-stripe: #f0f8f0;
+}
+
+html[data-theme='sunset'],
+body[data-theme='sunset'] {
+	--app-bg: #fff4eb;
+	--app-surface: #fffdf9;
+	--app-card: #ffffff;
+	--app-text: #6b3410;
+	--app-muted: #8c5a3c;
+	--app-border: #f0d8c6;
+	--app-accent: #c2410c;
+	--app-accent-contrast: #ffffff;
+	--app-nav-bg: #fff0e2;
+	--app-header-bg: #9a3412;
+	--app-header-text: #fff7ed;
+	--app-table-stripe: #fff7f0;
+}
+
+html[data-theme='contrast'],
+body[data-theme='contrast'] {
+	--app-bg: #000000;
+	--app-surface: #111111;
+	--app-card: #151515;
+	--app-text: #ffffff;
+	--app-muted: #d1d5db;
+	--app-border: #ffffff;
+	--app-accent: #ffd400;
+	--app-accent-contrast: #000000;
+	--app-nav-bg: #000000;
+	--app-header-bg: #000000;
+	--app-header-text: #ffd400;
+	--app-table-stripe: #1e1e1e;
+}
+
+html,
+body {
+	background: var(--app-bg);
+	color: var(--app-text);
+}
+
+body,
+.pcoded-main-container,
+.pcoded-wrapper,
+.pcoded-content,
+.pcoded-inner-content,
+.main-body,
+.page-wrapper {
+	background: var(--app-bg);
+	color: var(--app-text);
+}
+
+.card,
+.dropdown-menu,
+.modal-content,
+.list-group-item,
+.page-header,
+.breadcrumb,
+.card-footer,
+.table,
+.table thead th,
+.table tbody td,
+.table tbody th {
+	background-color: var(--app-surface);
+	color: var(--app-text);
+	border-color: var(--app-border);
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > * {
+	background-color: var(--app-table-stripe);
+	color: var(--app-text);
+}
+
+.text-muted,
+.form-text,
+.small,
+small {
+	color: var(--app-muted) !important;
+}
+
+.form-control,
+.form-select {
+	background: var(--app-surface);
+	color: var(--app-text);
+	border-color: var(--app-border);
+}
+
+.form-select,
+.form-select.form-select-sm,
+.form-control,
+.form-control.form-control-sm {
+	background-color: var(--app-surface) !important;
+	color: var(--app-text) !important;
+	border-color: var(--app-border) !important;
+}
+
+.form-select:disabled,
+.form-control:disabled {
+	background-color: color-mix(in srgb, var(--app-surface) 82%, #000 18%) !important;
+	color: var(--app-muted) !important;
+}
+
+.form-control:focus,
+.form-select:focus {
+	border-color: var(--app-accent);
+	box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--app-accent) 18%, transparent);
+}
+
+.btn-primary,
+.page-item.active .page-link {
+	background-color: var(--app-accent);
+	border-color: var(--app-accent);
+	color: var(--app-accent-contrast);
+}
+
+.btn-outline-primary,
+.page-link {
+	border-color: var(--app-accent);
+	color: var(--app-accent);
+}
+
+.page-link,
+.dropdown-item,
+.navbar,
+.nav-link,
+.breadcrumb-item,
+.card-footer,
+.header-intro,
+.card-header,
+.card-header h5,
+.card-header h6,
+.card-header .card-title,
+.card-header .card-subtitle,
+.modal-header,
+.modal-footer,
+.page-header,
+.page-header-title,
+.page-header-title.mb-0,
+.nav-item.pcoded-menu-caption,
+.card-body {
+	color: var(--app-text);
+}
+
+.card-header,
+.card-header h5,
+.card-header h6,
+.card-header .card-title,
+.card-header .card-subtitle,
+.modal-header,
+.modal-footer,
+.page-header,
+.page-header-title,
+.page-header-title.mb-0,
+.nav-item.pcoded-menu-caption,
+.asset-title,
+.card-footer,
+.card-footer.d-flex.justify-content-end.align-items-center,
+.card-footer.d-flex.justify-content-between.align-items-center,
+.modal-header,
+.modal-footer,
+.page-header,
+.page-header-title,
+.page-header-title.mb-0,
+.nav-item.pcoded-menu-caption,
+.table-responsive {
+	background: var(--app-surface) !important;
+	color: var(--app-text) !important;
+	border-color: var(--app-border) !important;
+}
+
+.modal-header,
+.modal-footer,
+.card-header,
+.card-footer {
+	border-color: var(--app-border) !important;
+}
+
+.pagination.pagination-sm.mb-0 .page-item .page-link,
+.pagination.pagination-sm.mb-0 .page-item.disabled .page-link {
+	background: var(--app-surface) !important;
+	border-color: var(--app-border) !important;
+	color: var(--app-text) !important;
+}
+
+.pagination.pagination-sm.mb-0 .page-item.active .page-link {
+	background: var(--app-accent) !important;
+	border-color: var(--app-accent) !important;
+	color: var(--app-accent-contrast) !important;
+}
+
+.pcoded-navbar,
+app-navigation.pcoded-navbar,
+.menu-light,
+.menu-dark {
+	background: var(--app-nav-bg) !important;
+	color: var(--app-text);
+}
+
+.pcoded-navbar .nav-link,
+.pcoded-navbar .pcoded-mtext,
+.pcoded-navbar .pcoded-submenu,
+.pcoded-navbar .pcoded-submenu li > a {
+	color: var(--app-text) !important;
+}
+
+.pcoded-navbar .pcoded-submenu {
+	background: var(--app-surface) !important;
+	border-color: var(--app-border) !important;
+}
+
+.pcoded-navbar .pcoded-inner-navbar li.pcoded-menu-caption,
+.pcoded-navbar .pcoded-inner-navbar li.pcoded-menu-caption label,
+.nav-item.pcoded-menu-caption,
+.nav-item.pcoded-menu-caption * {
+	color: var(--app-muted) !important;
+	background: transparent !important;
+}
+
+.pcoded-navbar .pcoded-submenu li > a:hover,
+.pcoded-navbar .pcoded-submenu li.active > a,
+.pcoded-navbar .pcoded-submenu li.pcoded-trigger > a {
+	background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface)) !important;
+	color: var(--app-accent) !important;
+}
+
+.pcoded-header,
+app-nav-bar.navbar,
+.header-blue,
+.navbar-light {
+	background: var(--app-header-bg) !important;
+	color: var(--app-header-text) !important;
+}
+
+.pcoded-header a,
+.pcoded-header .navbar-nav li,
+.pcoded-header .dropdown-toggle,
+.pcoded-header .m-b-0 {
+	color: var(--app-header-text) !important;
+}
+
+.profile-notification .pro-head {
+	background: var(--app-accent);
+	color: var(--app-accent-contrast);
+}
+
+.dropdown-menu.profile-notification,
+.dropdown-menu.dropdown-menu-end.profile-notification,
+.dropdown-menu.dropdown-menu-end.profile-notification.show {
+	background: var(--app-surface) !important;
+	color: var(--app-text) !important;
+	border: 1px solid var(--app-border) !important;
+	box-shadow: 0 18px 42px rgba(15, 23, 42, 0.18);
+}
+
+.profile-notification .pro-body,
+.profile-notification .dropdown-item,
+.profile-notification .dropdown-item i {
+	background: transparent !important;
+	color: var(--app-text) !important;
+}
+
+.profile-notification .dropdown-item:hover,
+.profile-notification .dropdown-item:focus,
+.profile-notification .dropdown-item.active {
+	background: color-mix(in srgb, var(--app-accent) 10%, var(--app-surface)) !important;
+	color: var(--app-accent) !important;
+}
+
+.profile-notification .pro-head .text-muted {
+	color: color-mix(in srgb, var(--app-accent-contrast) 70%, transparent) !important;
+}
+
+.card-footer.d-flex.justify-content-end.align-items-center,
+.card-footer.d-flex.justify-content-between.align-items-center,
+.card-footer.text-end,
+.card-footer {
+	background: var(--app-surface) !important;
+	color: var(--app-text) !important;
+	border-top: 1px solid var(--app-border) !important;
+}
+
+.pcoded-navbar .pcoded-hasmenu > .nav-link {
+	position: relative;
+	padding-right: 2rem;
+}
+
+.pcoded-navbar .pcoded-hasmenu > .nav-link > .submenu-indicator {
+	position: absolute;
+	right: 0.95rem;
+	top: 50%;
+	width: 0.45rem;
+	height: 0.45rem;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	transform: translateY(-70%) rotate(45deg);
+	transition: transform 0.2s ease, opacity 0.2s ease;
+	opacity: 0.75;
+	pointer-events: none;
+}
+
+.pcoded-navbar .pcoded-hasmenu.pcoded-trigger > .nav-link > .submenu-indicator {
+	transform: translateY(-35%) rotate(225deg);
+	opacity: 1;
+}
+
+.pcoded-navbar .nav-item.pcoded-hasmenu.user-management-text.pcoded-trigger > .nav-link,
+.pcoded-navbar .nav-item.pcoded-hasmenu.pcoded-trigger > .nav-link,
+.pcoded-navbar .nav-item.pcoded-hasmenu > .nav-link .pcoded-submenu{
+	color: var(--app-text) !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li > a,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar app-nav-item > li > a {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding-left: 0.75rem !important;
+	padding-right: 0.75rem !important;
+	min-height: 3rem;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li > a > .pcoded-mtext,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li > a > .pcoded-mtext {
+	display: none !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li > a > .pcoded-micon,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li > a > .pcoded-micon {
+	margin-right: 0 !important;
+	min-width: auto !important;
+	width: auto !important;
+	font-size: 1.1rem;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li > a {
+	justify-content: flex-start;
+	padding: 0.55rem 1rem 0.55rem 1.25rem !important;
+	white-space: nowrap;
+	overflow: visible;
+	text-overflow: clip;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu .pcoded-mtext {
+	display: inline !important;
+	margin-left: 0.5rem;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu .pcoded-micon {
+	margin-right: 0 !important;
+	font-size: 1rem;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-hasmenu > .nav-link {
+	padding-right: 2rem !important;
+	position: relative;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-hasmenu > .nav-link > .submenu-indicator {
+	right: 0.9rem;
+	width: 0.4rem;
+	height: 0.4rem;
+	border: 1px solid color-mix(in srgb, var(--app-surface) 65%, var(--app-accent));
+	border-radius: 50%;
+	background: var(--app-accent);
+	opacity: 0.55;
+	transform: translateY(-50%) scale(1);
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-hasmenu.pcoded-trigger > .nav-link > .submenu-indicator {
+	opacity: 1;
+	transform: translateY(-50%) scale(1.2);
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li.pcoded-hasmenu > .nav-link::after,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li.pcoded-hasmenu > .nav-link::after {
+	display: none;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li.pcoded-hasmenu > .nav-link > .submenu-indicator,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li.pcoded-hasmenu > .nav-link > .submenu-indicator {
+	display: block !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li.pcoded-hasmenu,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li.pcoded-hasmenu {
+	position: relative;
+	overflow: visible !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .navbar-content,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar,
+app-navigation.pcoded-navbar.navbar-collapsed app-nav-collapse,
+app-navigation.pcoded-navbar.navbar-collapsed app-nav-collapse > li {
+	overflow: visible !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-hasmenu > .pcoded-submenu {
+	display: block !important;
+	position: absolute;
+	top: -1px;
+	left: calc(100% - 1px);
+	min-width: 220px;
+	max-width: 320px;
+	padding: 0.75rem 0;
+	background: var(--app-surface) !important;
+	border: 1px solid var(--app-border) !important;
+	border-radius: 0.5rem;
+	box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+	opacity: 0;
+	visibility: hidden;
+	height: auto !important;
+	overflow: visible;
+	transition: opacity 0.2s ease, visibility 0.2s ease;
+	z-index: 1100;
+	pointer-events: none;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu::after,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li::after,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li > a::before {
+	content: none !important;
+	display: none !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li.pcoded-hasmenu {
+	position: relative;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li.pcoded-hasmenu > .nav-link {
+	position: relative;
+	padding-right: 1.85rem !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li.pcoded-hasmenu > .nav-link > .submenu-indicator {
+	right: 0.9rem;
+	top: 50%;
+	width: 0.38rem;
+	height: 0.38rem;
+	border-right: 2px solid currentColor;
+	border-bottom: 2px solid currentColor;
+	border-radius: 0;
+	background: transparent;
+	transform: translateY(-60%) rotate(-45deg);
+	opacity: 0.72;
+	display: block !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li.pcoded-hasmenu.pcoded-trigger > .nav-link > .submenu-indicator {
+	opacity: 1;
+	transform: translateY(-45%) rotate(45deg);
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-submenu li.pcoded-hasmenu > .pcoded-submenu {
+	top: -0.5rem;
+	left: calc(100% - 0.4rem);
+	z-index: 1200;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-hasmenu:hover > .pcoded-submenu,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar .pcoded-hasmenu.pcoded-trigger > .pcoded-submenu {
+	position: absolute !important;
+	opacity: 1 !important;
+	visibility: visible !important;
+	height: auto !important;
+	overflow: visible !important;
+	pointer-events: auto !important;
+}
+
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-collapse > li.pcoded-hasmenu.pcoded-trigger > .nav-link::after,
+app-navigation.pcoded-navbar.navbar-collapsed .pcoded-inner-navbar > app-nav-group > app-nav-item > li.pcoded-hasmenu.pcoded-trigger > .nav-link::after {
+	display: none;
+}
+
+body[data-theme] .sign-in-page {
+	background: #f2f5f9 !important;
+	color: #0f172a !important;
+}
+
+body[data-theme] .sign-in-page .sign-in-card,
+body[data-theme] .sign-in-page .right-panel,
+body[data-theme] .sign-in-page .sign-in-form-card,
+body[data-theme] .sign-in-page .otp-box,
+body[data-theme] .sign-in-page .form-control,
+body[data-theme] .sign-in-page .form-select,
+body[data-theme] .sign-in-page .toggle-password {
+	background: #ffffff !important;
+	color: #0f172a !important;
+	border-color: #d1d5db !important;
+}
+
+body[data-theme] .sign-in-page .text-muted,
+body[data-theme] .sign-in-page .form-text,
+body[data-theme] .sign-in-page .remember-row,
+body[data-theme] .sign-in-page .otp-hint {
+	color: #6b7280 !important;
+}
+
+body[data-theme] .sign-in-page .left-panel,
+body[data-theme] .sign-in-page .brand-panel,
+body[data-theme] .sign-in-page .brand-panel h1,
+body[data-theme] .sign-in-page .brand-panel p {
+	color: #ffffff !important;
+}
+

@@ -261,3 +261,73 @@
   to { background-position: -200% 0; }
 }
 
+:host {
+  color: var(--app-text);
+}
+
+.dashboard-shell {
+  color: var(--app-text);
+}
+
+.hero-card {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-header-bg) 92%, #000 8%) 0%,
+    color-mix(in srgb, var(--app-accent) 72%, #0ea5e9 28%) 52%,
+    color-mix(in srgb, var(--app-accent) 55%, #14b8a6 45%) 100%
+  );
+  color: var(--app-accent-contrast);
+}
+
+.hero-title,
+.hero-text,
+.hero-kpi,
+.hero-kpi-text,
+.hero-badge {
+  color: var(--app-accent-contrast);
+}
+
+.section-eyebrow,
+.metric-label,
+.renewal-owner,
+.activity-detail,
+.activity-time {
+  color: var(--app-muted);
+}
+
+.section-title,
+.metric-value,
+.renewal-name,
+.activity-title {
+  color: var(--app-text);
+}
+
+.status-pill {
+  background: color-mix(in srgb, var(--app-accent) 16%, var(--app-surface));
+  color: var(--app-accent);
+}
+
+.metric-card,
+:host ::ng-deep .dashboard-card,
+:host ::ng-deep .dashboard-card .card-body {
+  background: var(--app-card);
+  color: var(--app-text);
+  border-color: var(--app-border);
+}
+
+.renewal-item,
+.activity-item,
+.activity-item-alt {
+  border-bottom: 1px solid var(--app-border);
+}
+
+.loading-card {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--app-surface) 85%, #000 15%) 25%,
+    color-mix(in srgb, var(--app-surface) 60%, #000 40%) 50%,
+    color-mix(in srgb, var(--app-surface) 85%, #000 15%) 75%
+  );
+  background-size: 200% 100%;
+}
+

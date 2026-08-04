@@ -37,7 +37,7 @@
     </div>
   } @else {
     <div class="row g-4 mt-1">
-      @for (card of summaryCards; track card.title) {
+      @for (card of summaryCards; track $index) {
         <div class="col-12 col-sm-6 col-xl-3">
           <app-card [hidHeader]="true" cardClass="metric-card h-100 dashboard-card">
             <div class="d-flex justify-content-between align-items-start">
@@ -100,7 +100,7 @@
     <div class="col-xl-7">
       <app-card cardTitle="Low-stock alerts" cardClass="dashboard-card pair-card h-100">
         <ul class="renewal-list">
-          @for (item of lowStockAlerts; track item.name) {
+          @for (item of lowStockAlerts; track $index) {
             <li class="renewal-item">
               <div>
                 <div class="renewal-name">{{ item.name }}</div>
@@ -120,7 +120,7 @@
     <div class="col-xl-5">
       <app-card cardTitle="Critical items" cardClass="dashboard-card pair-card h-100">
         <ul class="activity-list">
-          @for (item of criticalItems; track item.title) {
+          @for (item of criticalItems; track $index) {
             <li class="activity-item-alt">
               <div class="activity-dot"></div>
               <div class="activity-content-dot">
@@ -139,7 +139,7 @@
     <div class="col-xl-7">
       <app-card cardTitle="Upcoming renewals" cardClass="dashboard-card pair-card h-100">
         <ul class="renewal-list">
-          @for (item of renewals; track item.name) {
+          @for (item of renewals; track $index) {
             <li class="renewal-item">
               <div>
                 <div class="renewal-name">{{ item.name }}</div>
@@ -154,7 +154,7 @@
     <div class="col-xl-5">
       <app-card cardTitle="Assignment heatmap" cardClass="dashboard-card pair-card h-100">
         <ul class="activity-list">
-          @for (item of heatmap; track item.department) {
+          @for (item of heatmap; track $index) {
             <li class="activity-item-alt">
               <div class="activity-dot"></div>
               <div class="activity-content-dot">
@@ -172,7 +172,7 @@
     <div class="col-12">
       <app-card cardTitle="Recent activity" cardClass="dashboard-card activity-card h-100">
         <ul class="activity-list">
-          @for (item of activityFeed; track item.title) {
+          @for (item of activityFeed; track $index) {
             <li class="activity-item-alt">
               <div class="activity-dot"></div>
               <div class="activity-content-dot">
