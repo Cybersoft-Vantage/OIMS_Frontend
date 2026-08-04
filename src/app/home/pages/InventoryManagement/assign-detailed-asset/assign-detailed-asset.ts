@@ -19,7 +19,8 @@ export class AssignDetailedAsset implements OnInit {
   assignments: any[] = [];
   employees: EmployeeDetail[] = [];
   search = '';
-  showAvailableOnly = false;
+  showAvailableOnly = true;
+  isSubmitting = false;
   page = 1;
   pageSize = 10;
   selectedAsset?: DetailedAsset | null;
@@ -56,7 +57,7 @@ export class AssignDetailedAsset implements OnInit {
   }
 
   isAssetAvailable(asset: DetailedAsset): boolean {
-    return !this.assetHasOpenAssignment(asset) && !this.isUnderMaintenance(asset);
+    return !this.assetHasOpenAssignment(asset) && !this.isBlockedForAssignment(asset);
   }
 
   get pagedAssets() {
@@ -93,9 +94,10 @@ export class AssignDetailedAsset implements OnInit {
   }
 
   submitAssignment(form: NgForm, modal: NgbModalRef) {
-    if (!form.valid) {
+    if (!form.valid || this.isSubmitting) {
       return;
     }
+    this.isSubmitting = true;
 
     const payload = {
       DetailedAssetId: this.assignModel.DetailedAssetId ?? 0,
@@ -111,9 +113,18 @@ export class AssignDetailedAsset implements OnInit {
         modal.close('saved');
         this.loadAssets();
         this.loadAssignments();
+        this.isSubmitting = false;
       },
-      error: () => this.notify.error('Unable to assign detailed asset.')
+      error: () => {
+        this.isSubmitting = false;
+        this.notify.error('Unable to assign detailed asset.');
+      }
     });
+  }
+
+  toggleAvailabilityView(): void {
+    this.showAvailableOnly = !this.showAvailableOnly;
+    this.page = 1;
   }
 
   getEmployeeName(employeeId?: number | null): string {
@@ -131,6 +142,16 @@ export class AssignDetailedAsset implements OnInit {
     if (!asset || !asset.Status) return false;
     const s = (asset.Status || '').toString().trim().toLowerCase();
     return s === 'damaged' || s === 'damage' || s === 'maintenance';
+  }
+
+  isSold(asset: DetailedAsset): boolean {
+    if (!asset || !asset.Status) return false;
+    const s = (asset.Status || '').toString().trim().toLowerCase();
+    return s === 'sold' || s === 'sold out' || s === 'sold-out';
+  }
+
+  isBlockedForAssignment(asset: DetailedAsset): boolean {
+    return this.isUnderMaintenance(asset) || this.isSold(asset);
   }
 
   statusLabel(status: string): string {

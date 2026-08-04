@@ -99,6 +99,13 @@ export interface DetailedAssetImportResult {
   errors: Array<{ row?: number; error: string }>;
 }
 
+export interface UserImportResult {
+  processed: number;
+  created: number;
+  updated: number;
+  errors: Array<{ row?: number; error: string }>;
+}
+
 export interface DependencyError {
   isDependencyError: true;
   message: string;
@@ -109,6 +116,7 @@ export interface DetailedCategory {
   DetailedCategoryId?: number;
   Name: string;
   ParentId?: number | null;
+  SubcategoryTagName?: string | null;
   Description?: string | null;
   CustomSchema?: string | null;
   children?: DetailedCategory[];
@@ -127,6 +135,7 @@ export interface DetailedAsset {
   PurchaseCost?: number | null;
   PurchaseDate?: string | null;
   WarrantyEnd?: string | null;
+  SoldPrice?: number | null;
   CustomValues?: string | null;
   IsDeleted?: number | boolean | null;
   DeletedAt?: string | null;
@@ -315,6 +324,20 @@ export class OimsCrudService {
     return this.http.delete<EmployeeDetail>(`${this.apiUrl}/employees/${id}`);
   }
 
+  uploadUsers(file: File) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+    return this.http.post<UserImportResult>(`${this.apiUrl}/employees/import`, formData);
+  }
+
+  downloadUserImportTemplateCsv() {
+    return this.http.get(`${this.apiUrl}/employees/import/template/csv`, { responseType: 'blob' });
+  }
+
+  downloadUserImportTemplateXlsx() {
+    return this.http.get(`${this.apiUrl}/employees/import/template/xlsx`, { responseType: 'blob' });
+  }
+
   // Detailed categories / assets
   getDetailedCategories() {
     return this.http.get<DetailedCategory[]>(`${this.apiUrl}/detailed/categories`);
@@ -393,6 +416,10 @@ export class OimsCrudService {
 
   returnDetailedAsset(assignmentId: number, payload: Partial<{ ReturnedDate?: string | null; Remarks?: string | null; ReturnedBy?: string | null; Status?: string | null }>) {
     return this.http.put<any>(`${this.apiUrl}/detailed/assignments/${assignmentId}/return`, payload);
+  }
+
+  returnDetailedAssetsBulk(payload: { AssignmentIds: number[]; ReturnedDate?: string | null; Remarks?: string | null; ReturnedBy?: string | null; Status?: string | null; }) {
+    return this.http.post<{ returns: any[]; failed_assignment_ids: number[] }>(`${this.apiUrl}/detailed/assignments/bulk/return`, payload);
   }
 
   getDetailedHistory(detailedAssetId?: number) {

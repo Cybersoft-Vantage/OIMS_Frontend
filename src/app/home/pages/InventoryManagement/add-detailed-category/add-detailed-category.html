@@ -51,6 +51,17 @@
                 <input name="Name" class="form-control" [(ngModel)]="model.Name" required />
               </div>
 
+              <div class="mb-3" *ngIf="isSubcategory">
+                <label class="form-label">Subcategory Tag Name *</label>
+                <input
+                  name="SubcategoryTagName"
+                  class="form-control text-uppercase"
+                  [(ngModel)]="model.SubcategoryTagName"
+                  maxlength="3"
+                  required
+                />
+                <div class="form-text">Use exactly 3 characters (example: LPT).</div>
+              </div>
 
               <div class="mb-3">
                 <label class="form-label">Category description</label>

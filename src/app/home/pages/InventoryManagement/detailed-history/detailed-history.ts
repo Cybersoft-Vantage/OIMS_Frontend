@@ -24,6 +24,7 @@ export class DetailedHistory implements OnInit {
   assetDetail: DetailedAsset | null = null;
   viewAssignment: any | null = null;
   selectedAssetId: number | null = null;
+  selectedEmployeeId: number | null = null;
   search = '';
   page = 1;
   pageSize = 10;
@@ -292,9 +293,15 @@ export class DetailedHistory implements OnInit {
 
   get filteredHistories() {
     const q = this.search?.toLowerCase().trim();
-    if (!q) return this.histories;
+    let rows = this.histories;
 
-    return this.histories.filter((h) => {
+    if (this.selectedEmployeeId != null) {
+      rows = rows.filter((history) => history.EmployeeId === this.selectedEmployeeId);
+    }
+
+    if (!q) return rows;
+
+    return rows.filter((h) => {
       const action = String(h.Action || '').toLowerCase();
       const notes = String(h.Notes || '').toLowerCase();
       const employee = String(h.EmployeeName || '').toLowerCase();

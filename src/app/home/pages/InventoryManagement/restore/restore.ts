@@ -9,22 +9,25 @@ import { DetailedAsset, DetailedCategory, OimsCrudService } from 'src/app/servic
   styleUrl: './restore.scss'
 })
 export class RestorePage implements OnInit {
-  activeTab: 'categories' | 'assets' = 'categories';
+  activeTab: 'categories' | 'assets' | 'sold' = 'categories';
   deletedCategories: DetailedCategory[] = [];
   deletedAssets: DetailedAsset[] = [];
+  assets: DetailedAsset[] = [];
   categories: DetailedCategory[] = [];
   isLoadingCategories = false;
   isLoadingAssets = false;
+  isLoadingSoldAssets = false;
 
   constructor(private readonly crud: OimsCrudService, private readonly cd: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.loadDeletedCategories();
     this.loadDeletedAssets();
+    this.loadAssets();
     this.loadCategories();
   }
 
-  setTab(tab: 'categories' | 'assets') {
+  setTab(tab: 'categories' | 'assets' | 'sold') {
     this.activeTab = tab;
   }
 
@@ -60,6 +63,22 @@ export class RestorePage implements OnInit {
     });
   }
 
+  loadAssets() {
+    this.isLoadingSoldAssets = true;
+    this.crud.getDetailedAssets().subscribe({
+      next: (data) => {
+        this.assets = data || [];
+        this.isLoadingSoldAssets = false;
+        this.cd.detectChanges();
+      },
+      error: () => {
+        this.assets = [];
+        this.isLoadingSoldAssets = false;
+        this.cd.detectChanges();
+      }
+    });
+  }
+
   restoreCategory(id: number) {
     if (!id) return;
     this.crud.restoreDetailedCategory(id).subscribe({
@@ -80,6 +99,25 @@ export class RestorePage implements OnInit {
       },
       error: () => {
         this.loadDeletedAssets();
+      }
+    });
+  }
+
+  get soldAssetsForRestore(): DetailedAsset[] {
+    return (this.assets || []).filter((asset) => {
+      const status = (asset.Status || '').toString().trim().toLowerCase();
+      return status.includes('sold') && asset.SoldPrice == null;
+    });
+  }
+
+  restoreSoldAsset(assetId: number) {
+    if (!assetId) return;
+    this.crud.updateDetailedAsset(assetId, { Status: 'Good', SoldPrice: null }).subscribe({
+      next: () => {
+        this.loadAssets();
+      },
+      error: () => {
+        this.loadAssets();
       }
     });
   }

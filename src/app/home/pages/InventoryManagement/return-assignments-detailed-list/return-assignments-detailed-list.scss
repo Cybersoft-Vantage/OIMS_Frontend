@@ -30,15 +30,6 @@
     background-color: #f8f9fa;
   }
 
-  .list-group-item.sold-item {
-    background-color: #f0f2f5;
-  }
-
-  .badge.bg-outline-primary {
-    color: #0d6efd;
-    background-color: rgba(13, 110, 253, 0.1);
-  }
-
   .asset-meta {
     min-width: 0;
   }
@@ -55,7 +46,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
-    color:black;
+    color: black;
   }
 
   .selected-badge {

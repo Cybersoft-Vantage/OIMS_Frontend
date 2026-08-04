@@ -8,6 +8,7 @@
       <div class="btn-group" role="group">
         <button type="button" class="btn btn-sm" [ngClass]="{ 'btn-primary': activeTab === 'categories', 'btn-outline-secondary': activeTab !== 'categories' }" (click)="setTab('categories')">Categories</button>
         <button type="button" class="btn btn-sm" [ngClass]="{ 'btn-primary': activeTab === 'assets', 'btn-outline-secondary': activeTab !== 'assets' }" (click)="setTab('assets')">Assets</button>
+        <button type="button" class="btn btn-sm" [ngClass]="{ 'btn-primary': activeTab === 'sold', 'btn-outline-secondary': activeTab !== 'sold' }" (click)="setTab('sold')">Sold</button>
       </div>
     </div>
   </div>
@@ -67,6 +68,37 @@
               <td>{{ asset.Status || '—' }}</td>
               <td>
                 <button class="btn btn-sm btn-outline-success" type="button" (click)="restoreAsset(asset.DetailedAssetId!)">Restore</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="activeTab === 'sold'">
+      <div *ngIf="isLoadingSoldAssets" class="text-center py-4">Loading sold assets...</div>
+      <div *ngIf="!isLoadingSoldAssets && soldAssetsForRestore.length === 0" class="text-center py-4 text-muted">No sold assets available for restore.</div>
+      <div *ngIf="!isLoadingSoldAssets && soldAssetsForRestore.length > 0" class="table-responsive">
+        <table class="table table-striped table-hover align-middle">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Asset Tag</th>
+              <th>Name</th>
+              <th>Category</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let asset of soldAssetsForRestore; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td>{{ asset.AssetTag || '—' }}</td>
+              <td>{{ asset.Name || '—' }}</td>
+              <td>{{ getCategoryName(asset.DetailedCategoryId) }}</td>
+              <td>{{ asset.Status || '—' }}</td>
+              <td>
+                <button class="btn btn-sm btn-outline-success" type="button" (click)="restoreSoldAsset(asset.DetailedAssetId!)">Restore</button>
               </td>
             </tr>
           </tbody>

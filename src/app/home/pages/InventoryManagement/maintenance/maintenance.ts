@@ -12,7 +12,7 @@ import { NgbModal, NgbModalRef } from '@ng-bootstrap/ng-bootstrap';
   styleUrl: './maintenance.scss'
 })
 export class Maintenance implements OnInit {
-  activeTab: 'workorders' | 'vendors' | 'history' = 'workorders';
+  activeTab: 'workorders' | 'vendors' | 'history' | 'sold' = 'workorders';
   workOrders: any[] = [];
   vendors: any[] = [];
   assets: DetailedAsset[] = [];
@@ -39,8 +39,18 @@ export class Maintenance implements OnInit {
   historyPage = 1;
   historyPageSize = 10;
   returnedByMap: Record<number, string> = {};
+  soldModel: { DetailedAssetId?: number; SoldPrice?: number | null } = { DetailedAssetId: undefined, SoldPrice: null };
+  soldEditModel: { DetailedAssetId?: number; AssetTag?: string; Name?: string; Status?: string; SoldPrice?: number | null } = {
+    DetailedAssetId: undefined,
+    AssetTag: '',
+    Name: '',
+    Status: '',
+    SoldPrice: null
+  };
+  isSavingSold = false;
 
   private workOrderModalRef: NgbModalRef | null = null;
+  private soldModalRef: NgbModalRef | null = null;
 
   constructor(private readonly crud: OimsCrudService, private readonly cd: ChangeDetectorRef, private readonly notify: NotificationService, private readonly modalService: NgbModal) {}
 
@@ -51,8 +61,15 @@ export class Maintenance implements OnInit {
     this.loadEmployees();
   }
 
-  setTab(tab: 'workorders' | 'vendors' | 'history') {
+  setTab(tab: 'workorders' | 'vendors' | 'history' | 'sold') {
     this.activeTab = tab;
+    if (tab === 'sold') {
+      this.loadAssets();
+    }
+  }
+
+  isSoldTab(): boolean {
+    return this.activeTab === 'sold';
   }
 
   loadWorkOrders(): void {
@@ -387,6 +404,85 @@ export class Maintenance implements OnInit {
     const status = (asset.Status || '').toString().toLowerCase();
     // Match substrings to catch variations like "Damaged - Awaiting Repair" or "Under Maintenance"
     return status.includes('damag') || status.includes('maint');
+  }
+
+  isSold(asset: DetailedAsset): boolean {
+    const status = (asset.Status || '').toString().trim().toLowerCase();
+    return status.includes('sold') || asset.SoldPrice != null;
+  }
+
+  get soldAssets(): DetailedAsset[] {
+    return this.assets.filter((asset) => this.isSold(asset));
+  }
+
+  get assignableAssetsForSold(): DetailedAsset[] {
+    return this.assets.filter((asset) => !this.isSold(asset));
+  }
+
+  openAddSoldAssetModal(template: any): void {
+    this.soldModel = { DetailedAssetId: undefined, SoldPrice: null };
+    this.soldModalRef = this.modalService.open(template, { centered: true });
+  }
+
+  openEditSoldAssetModal(template: any, asset: DetailedAsset): void {
+    if (!asset?.DetailedAssetId) {
+      return;
+    }
+    this.soldEditModel = {
+      DetailedAssetId: asset.DetailedAssetId,
+      AssetTag: asset.AssetTag || '—',
+      Name: asset.Name || '—',
+      Status: asset.Status || 'Sold',
+      SoldPrice: asset.SoldPrice == null ? null : Number(asset.SoldPrice)
+    };
+    this.soldModalRef = this.modalService.open(template, { centered: true });
+  }
+
+  saveSoldAsset(): void {
+    if (!this.soldModel.DetailedAssetId || this.isSavingSold) {
+      return;
+    }
+    this.isSavingSold = true;
+    this.crud.updateDetailedAsset(this.soldModel.DetailedAssetId, {
+      Status: 'Sold',
+      SoldPrice: this.soldModel.SoldPrice == null ? null : Number(this.soldModel.SoldPrice)
+    }).subscribe({
+      next: () => {
+        this.notify.success('Asset marked as sold successfully.');
+        this.isSavingSold = false;
+        this.soldModel = { DetailedAssetId: undefined, SoldPrice: null };
+        this.soldModalRef?.close('saved');
+        this.soldModalRef = null;
+        this.loadAssets();
+      },
+      error: () => {
+        this.isSavingSold = false;
+        this.notify.error('Unable to mark asset as sold.');
+      }
+    });
+  }
+
+  saveEditedSoldPrice(): void {
+    if (!this.soldEditModel.DetailedAssetId || this.isSavingSold) {
+      return;
+    }
+    this.isSavingSold = true;
+    this.crud.updateDetailedAsset(this.soldEditModel.DetailedAssetId, {
+      Status: 'Sold',
+      SoldPrice: this.soldEditModel.SoldPrice == null ? null : Number(this.soldEditModel.SoldPrice)
+    }).subscribe({
+      next: () => {
+        this.notify.success('Sold price updated.');
+        this.isSavingSold = false;
+        this.soldModalRef?.close('saved');
+        this.soldModalRef = null;
+        this.loadAssets();
+      },
+      error: () => {
+        this.isSavingSold = false;
+        this.notify.error('Unable to update sold price.');
+      }
+    });
   }
 
   getAssetTag(assetId?: number | null): string {

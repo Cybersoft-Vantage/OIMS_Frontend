@@ -60,6 +60,58 @@
   line-height: 1.4;
 }
 
+/* Asset Tag modal styles */
+.asset-tag-modal-overlay .modal-dialog {
+  margin: 0 1rem;
+}
+.asset-tag-modal-overlay .modal-content {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(33, 37, 41, 0.3);
+  border: 0;
+}
+.asset-tag-modal-overlay .modal-header {
+  align-items: center;
+  padding: 0.8rem 1rem;
+  background: var(--app-surface, #fff);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+.asset-tag-modal-overlay .modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.asset-tag-modal-overlay .modal-header .btn-primary {
+  --bs-btn-padding-y: .35rem;
+  --bs-btn-padding-x: .7rem;
+  --bs-btn-font-size: .9rem;
+}
+.asset-tag-modal-overlay .modal-body {
+  padding: 1rem;
+  background: var(--app-surface-2, #fafafa);
+}
+.asset-tag-modal-overlay .form-select.form-select-sm {
+  min-height: 38px;
+  padding: .35rem .6rem;
+}
+.asset-tag-modal-overlay table.table thead th {
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  font-weight: 600;
+}
+.asset-tag-modal-overlay table.table tbody tr:hover {
+  background: rgba(13,110,253,0.03);
+}
+.asset-tag-modal-overlay .btn-close {
+  background: transparent;
+  border: 0;
+  width: 36px;
+  height: 36px;
+}
+
+@media (max-width: 576px) {
+  .asset-tag-modal-overlay .modal-dialog { max-width: 95%; }
+}
+
 .info-icon {
   display: inline-flex;
   align-items: center;

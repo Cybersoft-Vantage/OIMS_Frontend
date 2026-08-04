@@ -5,11 +5,16 @@
       <div class="ms-4">
         <input class="form-control form-control-sm" placeholder="Search assignments" [(ngModel)]="search" />
       </div>
-      <div class="ms-3 d-flex gap-2">
-        <label class="form-check form-switch ms-2">
-          <input class="form-check-input" type="checkbox" [(ngModel)]="onlyNotReturned" />
-          <span class="form-check-label">Only not returned</span>
-        </label>
+      <div class="ms-3">
+        <select class="form-select form-select-sm" [(ngModel)]="employeeFilter">
+          <option [ngValue]="undefined">All Employees</option>
+          <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
+        </select>
+      </div>
+      <div class="ms-3">
+        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleReturnView()">
+          {{ onlyNotReturned ? 'Show All' : 'Only Not Returned' }}
+        </button>
       </div>
     </div>
     <div class="d-flex gap-2 align-items-center">
@@ -92,7 +97,10 @@
       </div>
       <div class="col-12 text-end">
         <button type="button" class="btn btn-secondary me-2" (click)="modal.dismiss('cancel')">Cancel</button>
-        <button type="submit" class="btn btn-primary" [disabled]="returnForm.invalid">Return</button>
+        <button type="submit" class="btn btn-primary" [disabled]="returnForm.invalid || isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ isSubmitting ? 'Returning...' : 'Return' }}
+        </button>
       </div>
     </form>
   </div>

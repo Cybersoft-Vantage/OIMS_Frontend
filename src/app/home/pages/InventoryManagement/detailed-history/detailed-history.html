@@ -10,6 +10,10 @@
           <option [ngValue]="null">All assets</option>
           <option *ngFor="let a of assets" [ngValue]="a.DetailedAssetId">{{ a.AssetTag || a.Name }}</option>
         </select>
+        <select class="form-select form-select-sm" [(ngModel)]="selectedEmployeeId">
+          <option [ngValue]="null">All users</option>
+          <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
+        </select>
         <input class="form-control form-control-sm" placeholder="Search history" [(ngModel)]="search" />
         <select class="form-select form-select-sm" [(ngModel)]="pageSize">
           <option [ngValue]="10">10</option>

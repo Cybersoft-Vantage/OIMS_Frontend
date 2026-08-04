@@ -22,9 +22,11 @@ export class DetailedAssignmentsList implements OnInit {
   returnModel: { ReturnedDate?: string; Remarks?: string; ReturnedBy?: string; Status?: string } = { ReturnedDate: '', Remarks: '', ReturnedBy: '', Status: 'Available' };
   activeAssignmentId: number | null = null;
   search = '';
-  onlyNotReturned = false;
+  employeeFilter?: number;
+  onlyNotReturned = true;
   page = 1;
   pageSize = 10;
+  isSubmitting = false;
 
   constructor(
     private readonly crud: OimsCrudService,
@@ -86,8 +88,19 @@ export class DetailedAssignmentsList implements OnInit {
   }
 
   submitReturn(form: NgForm, modal: NgbModalRef) {
-    if (!form.valid || !this.activeAssignmentId) return;
-    this.crud.returnDetailedAsset(this.activeAssignmentId, this.returnModel).subscribe({ next: () => { this.load(); modal.close('returned'); }, error: () => this.notify.error('Unable to return detailed asset.') });
+    if (!form.valid || !this.activeAssignmentId || this.isSubmitting) return;
+    this.isSubmitting = true;
+    this.crud.returnDetailedAsset(this.activeAssignmentId, this.returnModel).subscribe({
+      next: () => {
+        this.load();
+        this.isSubmitting = false;
+        modal.close('returned');
+      },
+      error: () => {
+        this.isSubmitting = false;
+        this.notify.error('Unable to return detailed asset.');
+      }
+    });
   }
 
   getAssetName(assetId?: number | null): string {
@@ -104,7 +117,10 @@ export class DetailedAssignmentsList implements OnInit {
 
   get filteredAssignments() {
     const q = this.search?.toLowerCase().trim();
-    const rows = this.onlyNotReturned ? this.assignments.filter((a) => !a.IsReturned || a.IsReturned === 0) : this.assignments;
+    let rows = this.onlyNotReturned ? this.assignments.filter((a) => !a.IsReturned || a.IsReturned === 0) : this.assignments;
+    if (this.employeeFilter) {
+      rows = rows.filter((a) => a.EmployeeId === this.employeeFilter);
+    }
     if (!q) return rows;
     return rows.filter((a) => {
       const assetName = this.getAssetName(a.DetailedAssetId).toLowerCase();
@@ -140,4 +156,9 @@ export class DetailedAssignmentsList implements OnInit {
   prevPage() { this.page = Math.max(1, this.page - 1); }
   nextPage() { this.page = Math.min(this.totalPages(), this.page + 1); }
   gotoPage(n: number) { this.page = n; }
+
+  toggleReturnView(): void {
+    this.onlyNotReturned = !this.onlyNotReturned;
+    this.page = 1;
+  }
 }

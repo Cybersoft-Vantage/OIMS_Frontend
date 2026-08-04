@@ -9,6 +9,8 @@
           (click)="setActiveTab('assignasset')">Assign Asset</button></li>
       <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'assignmulti'" type="button"
           (click)="setActiveTab('assignmulti')">Assign Multiple Assets</button></li>
+        <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'returnmulti'" type="button"
+          (click)="setActiveTab('returnmulti')">Return Multiple Assets</button></li>
       <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'returnasset'" type="button"
           (click)="setActiveTab('returnasset')">Return Asset</button></li>
       <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'assethistory'" type="button"
@@ -61,7 +63,7 @@
             </div>
             <div class="col-md-6 mb-3">
               <label class="form-label">Asset Tag</label>
-              <input name="AssetTag" [(ngModel)]="model.AssetTag" class="form-control" readonly />
+              <input name="AssetTag" [(ngModel)]="model.AssetTag" class="form-control" readonly disabled/>
             </div>
 
             <div class="col-md-6 mb-3">
@@ -80,11 +82,14 @@
             </div>
 
             <div class="col-md-6 mb-3">
-              <label class="form-label">Status</label>
-              <select name="Status" class="form-select" [(ngModel)]="model.Status">
+              <label class="form-label">Status <span class="text-danger">*</span></label>
+              <select name="Status" #statusModel="ngModel" class="form-select" [(ngModel)]="model.Status" required [ngClass]="{'is-invalid': statusModel.invalid && statusModel.touched}">
                 <option [ngValue]="undefined">-- select --</option>
                 <option *ngFor="let s of statuses" [ngValue]="s.StatusName">{{s.StatusName}}</option>
               </select>
+              <div class="invalid-feedback" *ngIf="statusModel.invalid && statusModel.touched">
+                Status is required.
+              </div>
             </div>
 
             <div class="col-md-6 mb-3">
@@ -149,9 +154,32 @@
     <ng-template #assetList>
         <div class="card">
         <div class="card-header">
-          <h5 class="mb-0 mt-3">Existing Detailed Assets</h5>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
+            <h5 class="mb-0">Existing Detailed Assets</h5>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="openAssetTagModal()" [disabled]="!assets.length">Download AsssetTag</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="downloadExistingAssetsXlsx()" [disabled]="!filteredAssets.length">Download XLSX</button>
+            </div>
+          </div>
         </div>
         <div class="card-body">
+      <div class="row g-2 mb-3">
+        <div class="col-md-4">
+          <select class="form-select form-select-sm" [(ngModel)]="selectedFilterCategoryId" (ngModelChange)="onAssetFilterCategoryChange($event)">
+            <option [ngValue]="null">All Parent Categories</option>
+            <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select form-select-sm" [(ngModel)]="selectedFilterSubCategory" [disabled]="!selectedFilterCategoryId">
+            <option value="">All Subcategories</option>
+            <option *ngFor="let category of assetFilterSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
+          </select>
+        </div>
+        <div class="col-md-4 text-md-end text-muted small align-self-center">
+          Showing {{ filteredAssets.length }} asset(s)
+        </div>
+      </div>
       <table class="table table-striped">
         <thead>
           <tr>
@@ -164,7 +192,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let a of assets">
+          <tr *ngFor="let a of filteredAssets">
             <td>{{a.Name}}</td>
             <td>{{a.AssetTag}}</td>
             <td>{{ getCategoryName(a.DetailedCategoryId) }}</td>
@@ -188,11 +216,76 @@
               <button class="btn btn-sm btn-danger" type="button" (click)="deleteAsset(a.DetailedAssetId)">Delete</button>
             </td>
           </tr>
+          <tr *ngIf="!filteredAssets.length">
+            <td colspan="7" class="text-center text-muted">No detailed assets found for the selected filters.</td>
+          </tr>
         </tbody>
       </table>
         </div>
         </div>
     </ng-template>
+  </div>
+
+  <!-- Asset Tag modal (centered overlay) -->
+    <div *ngIf="assetTagModalOpen"
+      class="asset-tag-modal-overlay"
+       role="dialog"
+       aria-modal="true"
+      style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:1060;background:rgba(0,0,0,0.45);"
+      (click)="closeAssetTagModal()">
+    <div class="modal-dialog modal-lg" role="document" (click)="$event.stopPropagation()" style="max-width:900px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Download AsssetTag</h5>
+          <div class="ms-auto d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-primary" type="button" (click)="downloadAssetTagsXlsx()" [disabled]="!anyAssetTagSelected()">Download XLSX</button>
+            <button type="button" class="btn-close" aria-label="Close" (click)="closeAssetTagModal()"></button>
+          </div>
+        </div>
+        <div class="modal-body">
+          <div class="row g-2 mb-3">
+            <div class="col-md-6">
+              <select class="form-select form-select-sm" [(ngModel)]="assetTagFilterCategoryId" (ngModelChange)="onAssetTagModalCategoryChange($event)">
+                <option [ngValue]="null">All Parent Categories</option>
+                <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <select class="form-select form-select-sm" [(ngModel)]="assetTagFilterSubCategory" [disabled]="!assetTagFilterCategoryId">
+                <option value="">All Subcategories</option>
+                <option *ngFor="let category of assetTagFilterSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive" style="max-height:400px; overflow:auto;">
+            <table class="table table-sm table-hover mb-0">
+              <thead>
+                <tr>
+                  <th style="width:40px"><input type="checkbox" [checked]="allAssetTagSelected()" (change)="toggleSelectAll($event)" /></th>
+                  <th>Asset Tag</th>
+                  <th>Name</th>
+                  <th>Category</th>
+                  <th>Subcategory</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let a of assetTagModalAssets">
+                  <td><input type="checkbox" [checked]="isAssetTagSelected(a)" (change)="toggleAssetTagSelection(a)" /></td>
+                  <td>{{ a.AssetTag || '—' }}</td>
+                  <td>{{ a.Name }}</td>
+                  <td>{{ getCategoryName(a.DetailedCategoryId) }}</td>
+                  <td>{{ a.SubCategory || '—' }}</td>
+                </tr>
+                <tr *ngIf="!assetTagModalAssets.length">
+                  <td colspan="5" class="text-center text-muted">No assets found.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div *ngIf="activeTab === 'assignasset'">
@@ -201,6 +294,9 @@
   <div *ngIf="activeTab === 'assignmulti'">
     <app-assignments-detailed-list></app-assignments-detailed-list>
 </div>
+  <div *ngIf="activeTab === 'returnmulti'">
+    <app-return-detailed-assignments-list></app-return-detailed-assignments-list>
+  </div>
   <div *ngIf="activeTab === 'returnasset'">
     <app-detailed-assignments-list></app-detailed-assignments-list>
   </div>

@@ -18,6 +18,8 @@ export class Adduser implements OnInit {
 
   employees: EmployeeDetail[] = [];
   assets: Asset[] = [];
+  activeTab: 'users' | 'import' = 'users';
+  showPassword = false;
   roleFilter: string | null = null;
   employeeForm: EmployeeDetail & { Password?: string | null } = {
     UserId: '',
@@ -36,6 +38,13 @@ export class Adduser implements OnInit {
   search = '';
   page = 1;
   pageSize = 10;
+  importFile?: File;
+  importValidationError?: string;
+  importResultMessage?: string;
+  importErrors: Array<{ row?: number; error: string }> = [];
+  importPreviewHeaders: string[] = [];
+  importPreviewRows: Array<Record<string, string>> = [];
+  readonly importPreviewLimit = 5;
 
   get filteredEmployees() {
     const q = this.search?.toLowerCase().trim();
@@ -88,6 +97,14 @@ export class Adduser implements OnInit {
     this.loadEmployees();
   }
 
+  setActiveTab(tab: 'users' | 'import'): void {
+    this.activeTab = tab;
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
   loadEmployees(): void {
     forkJoin({
       employees: this.crudService.getEmployees(),
@@ -117,7 +134,8 @@ export class Adduser implements OnInit {
   editEmployee(employee: EmployeeDetail): void {
     this.isEditing = true;
     this.editingId = employee.EmployeeId ?? null;
-    this.employeeForm = { ...employee };
+    this.showPassword = false;
+    this.employeeForm = { ...employee, Password: '' };
     this.modalService.open(this.userModalTemplate, { centered: true, size: 'lg' });
   }
 
@@ -148,6 +166,116 @@ export class Adduser implements OnInit {
     });
   }
 
+  onImportFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.importFile = input.files && input.files.length ? input.files[0] : undefined;
+    this.importValidationError = undefined;
+    this.importResultMessage = undefined;
+    this.importErrors = [];
+    this.importPreviewHeaders = [];
+    this.importPreviewRows = [];
+
+    if (!this.importFile) {
+      return;
+    }
+
+    const filename = this.importFile.name.toLowerCase();
+    if (!filename.endsWith('.csv') && !filename.endsWith('.xlsx')) {
+      this.importValidationError = 'Only CSV or XLSX files are supported.';
+      this.importFile = undefined;
+      return;
+    }
+
+    if (filename.endsWith('.csv')) {
+      this.loadImportCsvPreview(this.importFile);
+    }
+  }
+
+  private loadImportCsvPreview(file: File): void {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      if (!text.trim()) {
+        this.importValidationError = 'CSV file appears to be empty.';
+        return;
+      }
+      const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter((line) => line.trim().length > 0);
+      if (!lines.length) {
+        this.importValidationError = 'CSV file appears to be empty.';
+        return;
+      }
+      const headers = lines[0].split(',').map((header) => header.trim()).filter((header) => header.length > 0);
+      if (!headers.length) {
+        this.importValidationError = 'CSV header row is missing or malformed.';
+        return;
+      }
+      this.importPreviewHeaders = headers;
+      this.importPreviewRows = lines.slice(1, 1 + this.importPreviewLimit).map((line) => {
+        const values = line.split(',').map((value) => value.trim());
+        const row: Record<string, string> = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] ?? '';
+        });
+        return row;
+      });
+    };
+    reader.onerror = () => {
+      this.importValidationError = 'Unable to read the selected CSV file.';
+    };
+    reader.readAsText(file);
+  }
+
+  uploadUsers(): void {
+    if (!this.importFile) {
+      this.notify.warn('Please select a file first.');
+      return;
+    }
+    if (this.importValidationError) {
+      this.notify.error(this.importValidationError);
+      return;
+    }
+
+    this.crudService.uploadUsers(this.importFile)
+      .pipe(finalize(() => this.cd.detectChanges()))
+      .subscribe({
+        next: (response) => {
+          this.importResultMessage = `Processed ${response.processed} rows: created ${response.created}, updated ${response.updated}.`;
+          this.importErrors = Array.isArray(response.errors)
+            ? response.errors.map((error) => ({ row: error.row, error: error.error }))
+            : [];
+          this.loadEmployees();
+        },
+        error: (err) => {
+          this.importResultMessage = undefined;
+          const message = err?.error?.detail || err?.message || 'User import failed.';
+          this.importErrors = [{ error: String(message) }];
+        }
+      });
+  }
+
+  downloadUserTemplate(format: 'csv' | 'xlsx'): void {
+    const filename = format === 'csv' ? 'user_import_template.csv' : 'user_import_template.xlsx';
+    const download = format === 'csv'
+      ? this.crudService.downloadUserImportTemplateCsv()
+      : this.crudService.downloadUserImportTemplateXlsx();
+
+    download.subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      },
+      error: () => {
+        this.notify.error('Unable to download import template.');
+      }
+    });
+  }
+
   deleteEmployee(id: number): void {
     this.notify.confirmModal('Delete this employee?').then((ok) => {
       if (!ok) return;
@@ -161,6 +289,7 @@ export class Adduser implements OnInit {
   private resetForm(): void {
     this.isEditing = false;
     this.editingId = null;
+    this.showPassword = false;
     this.employeeForm = {
       UserId: '',
       FullName: '',
@@ -170,7 +299,7 @@ export class Adduser implements OnInit {
       Phone: '',
       IsActive: 1,
       Role: 'employee',
-      Password: ''
+      Password: 'CSV112233'
     };
   }
 }

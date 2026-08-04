@@ -14,7 +14,19 @@
             </div>
         </div>
     </div>
-  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card-header">
+    <ul class="nav nav-tabs mb-2">
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="activeTab === 'users'" type="button" (click)="setActiveTab('users')">Users</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="activeTab === 'import'" type="button" (click)="setActiveTab('import')">Import Users</button>
+      </li>
+    </ul>
+  </div>
+
+  <ng-container *ngIf="activeTab === 'users'">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <div class="d-flex align-items-center flex-wrap gap-2">
         <h5 class="mb-0">Users</h5>
         <div class="ms-4">
@@ -37,49 +49,49 @@
         </select>
         <button type="button" class="btn btn-outline-primary" (click)="openModal()">Add User</button>
       </div>
-  </div>
-  <div class="card-body">
-    <div class="table-responsive table-scroll-x">
-      <table class="table table-hover align-middle table-nowrap">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>User ID</th>
-            <th>Full Name</th>
-            <th>Department</th>
-            <th>Designation</th>
-            <th>Role</th>
-            <th>Assets</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Status</th>
-            <th class="text-end">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-            <tr *ngFor="let employee of pagedEmployees; let i = index">
-              <td>{{ (page - 1) * pageSize + i + 1 }}</td>
-              <td>{{ employee.UserId }}</td>
-              <td>{{ employee.FullName }}</td>
-              <td>{{ employee.Department }}</td>
-              <td>{{ employee.Designation }}</td>
-              <td>{{ employee.Role || 'employee' }}</td>
-              <td>{{ employee.AssetCount ?? 0 }}</td>
-              <td>{{ employee.Email }}</td>
-              <td>{{ employee.Phone || '—' }}</td>
-              <td>{{ employee.IsActive ? 'Active' : 'Inactive' }}</td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="editEmployee(employee)">Edit</button>
-                <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteEmployee(employee.EmployeeId!)">Delete</button>
-              </td>
-            </tr>
-            <tr *ngIf="!filteredEmployees.length">
-              <td colspan="9" class="text-center text-muted">No employees found.</td>
-            </tr>
-        </tbody>
-      </table>
     </div>
-  </div>
+    <div class="card-body">
+      <div class="table-responsive table-scroll-x">
+        <table class="table table-hover align-middle table-nowrap">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>User ID</th>
+              <th>Full Name</th>
+              <th>Department</th>
+              <th>Designation</th>
+              <th>Role</th>
+              <th>Assets</th>
+              <th>Email</th>
+              <th>Phone</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+              <tr *ngFor="let employee of pagedEmployees; let i = index">
+                <td>{{ (page - 1) * pageSize + i + 1 }}</td>
+                <td>{{ employee.UserId }}</td>
+                <td>{{ employee.FullName }}</td>
+                <td>{{ employee.Department }}</td>
+                <td>{{ employee.Designation }}</td>
+                <td>{{ employee.Role || 'employee' }}</td>
+                <td>{{ employee.AssetCount ?? 0 }}</td>
+                <td>{{ employee.Email }}</td>
+                <td>{{ employee.Phone || '—' }}</td>
+                <td>{{ employee.IsActive ? 'Active' : 'Inactive' }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary me-2" type="button" (click)="editEmployee(employee)">Edit</button>
+                  <button class="btn btn-sm btn-outline-danger" type="button" (click)="deleteEmployee(employee.EmployeeId!)">Delete</button>
+                </td>
+              </tr>
+              <tr *ngIf="!filteredEmployees.length">
+                <td colspan="9" class="text-center text-muted">No employees found.</td>
+              </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <div class="card-footer d-flex justify-content-end align-items-center">
       <small class="text-muted me-3">Showing {{ filteredEmployees.length }} items</small>
       <nav>
@@ -90,6 +102,61 @@
         </ul>
       </nav>
     </div>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab === 'import'">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+          <h5 class="mb-1">Import Users</h5>
+          <small class="text-muted">Upload a CSV/XLSX file to create or update users by UserId.</small>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="downloadUserTemplate('csv')">Download CSV Template</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="downloadUserTemplate('xlsx')">Download XLSX Template</button>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="userImportFile" class="form-label">Choose File</label>
+        <input id="userImportFile" type="file" class="form-control" accept=".csv,.xlsx" (change)="onImportFileSelected($event)" />
+        <small class="text-danger" *ngIf="importValidationError">{{ importValidationError }}</small>
+      </div>
+
+      <div class="table-responsive mb-3" *ngIf="importPreviewHeaders.length">
+        <table class="table table-sm table-striped">
+          <thead>
+            <tr>
+              <th *ngFor="let header of importPreviewHeaders">{{ header }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of importPreviewRows">
+              <td *ngFor="let header of importPreviewHeaders">{{ row[header] }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <small class="text-muted">Previewing first {{ importPreviewRows.length }} rows.</small>
+      </div>
+
+      <div class="d-flex justify-content-end mb-3">
+        <button type="button" class="btn btn-primary" (click)="uploadUsers()">Upload</button>
+      </div>
+
+      <div class="alert alert-success" *ngIf="importResultMessage">
+        {{ importResultMessage }}
+      </div>
+
+      <div class="alert alert-warning" *ngIf="importErrors.length">
+        <strong>Import issues:</strong>
+        <ul class="mb-0 mt-2">
+          <li *ngFor="let error of importErrors">
+            {{ error.row ? ('Row ' + error.row + ': ') : '' }}{{ error.error }}
+          </li>
+        </ul>
+      </div>
+    </div>
+  </ng-container>
 </div>
 
 <ng-template #userModal let-modal>
@@ -133,7 +200,12 @@
       </div>
       <div class="col-md-6">
         <label class="form-label">Password</label>
-        <input type="password" class="form-control" name="Password" [(ngModel)]="employeeForm.Password" [required]="!isEditing" />
+        <div class="input-group">
+          <input [type]="showPassword ? 'text' : 'password'" class="form-control" name="Password" [(ngModel)]="employeeForm.Password" [required]="!isEditing" />
+          <button class="btn btn-outline-secondary" type="button" (click)="togglePasswordVisibility()" aria-label="Toggle password visibility">
+            <i [class]="showPassword ? 'feather icon-eye-off' : 'feather icon-eye'"></i>
+          </button>
+        </div>
         <div class="form-text">Leave blank when editing if you do not want to change the password.</div>
       </div>
       <div class="col-12">

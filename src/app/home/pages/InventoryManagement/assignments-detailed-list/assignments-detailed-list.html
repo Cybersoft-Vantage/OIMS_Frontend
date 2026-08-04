@@ -1,12 +1,12 @@
 <div class="assignments-multi-card row gx-4">
   <div class="col-xl-7">
     <div class="card h-100">
-      <div class="card-header d-flex flex-column flex-md-row justify-content-between gap-2 align-items-start align-items-md-center">
-        <div>
+      <div class="card-header">
+        <div class="header-intro mb-2">
           <h5 class="mb-1">Available Assets (In Stock)</h5>
           <small class="text-muted">Select one or more assets to assign.</small>
         </div>
-        <div class="d-flex gap-2">
+        <div class="search-controls d-flex gap-2">
           <input class="form-control form-control-sm" placeholder="Search tag / name..." [(ngModel)]="search" />
           <select class="form-select form-select-sm" [(ngModel)]="categoryFilter">
             <option [ngValue]="undefined">Category</option>
@@ -17,7 +17,7 @@
       <div class="card-body px-0 py-2">
         <div class="list-group list-group-flush">
           <button type="button" class="list-group-item list-group-item-action d-flex align-items-center justify-content-between"
-            *ngFor="let asset of pagedAssets" [class.active]="isSelected(asset)" [class.disabled]="isUnderMaintenance(asset)" (click)="toggleSelection(asset)">
+            *ngFor="let asset of pagedAssets" [class.active]="isSelected(asset)" [class.disabled]="isBlockedForAssignment(asset)" [class.sold-item]="isSold(asset)" (click)="toggleSelection(asset)">
             <div class="asset-meta">
               <div class="asset-meta-row">
                 <div class="asset-title fw-semibold" title="{{ asset.AssetTag || '-' }} {{ asset.Name }}">{{ asset.AssetTag || '-' }} {{ asset.Name }}</div>
@@ -27,8 +27,9 @@
             </div>
             <div class="text-end">
               <span class="badge bg-light text-dark me-2">{{ getCategoryName(asset.DetailedCategoryId) }}</span>
-              <span *ngIf="!isUnderMaintenance(asset)" class="badge" [ngClass]="assetHasOpenAssignment(asset) ? 'bg-secondary' : 'bg-outline-primary'">{{ assetHasOpenAssignment(asset) ? 'Assigned' : 'Available' }}</span>
+              <span *ngIf="!isBlockedForAssignment(asset)" class="badge" [ngClass]="assetHasOpenAssignment(asset) ? 'bg-secondary' : 'bg-outline-primary'">{{ assetHasOpenAssignment(asset) ? 'Assigned' : 'Available' }}</span>
               <span *ngIf="isUnderMaintenance(asset)" class="badge bg-danger">{{ asset.Status || 'Maintenance' }}</span>
+              <span *ngIf="isSold(asset)" class="badge bg-dark">Sold</span>
             </div>
           </button>
           <div *ngIf="!filteredAssets.length" class="list-group-item text-center text-muted">No assets found.</div>
@@ -98,7 +99,10 @@
         </div>
       </div>
       <div class="card-footer text-end">
-        <button type="button" class="btn btn-primary" (click)="submitAssignments()" [disabled]="!selectedAssetList.length || !selectedEmployeeId">Assign ({{ selectedAssetList.length }})</button>
+        <button type="button" class="btn btn-primary" (click)="submitAssignments()" [disabled]="!selectedAssetList.length || !selectedEmployeeId || isSubmitting">
+          <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ isSubmitting ? 'Assigning...' : ('Assign (' + selectedAssetList.length + ')') }}
+        </button>
       </div>
     </div>
   </div>

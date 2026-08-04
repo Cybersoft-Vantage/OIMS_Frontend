@@ -18,6 +18,7 @@ export class AddDetailedCategory implements OnInit {
   flatCategories: Array<{ id?: number; name: string }> = [];
   editingId: number | null = null;
   selectedCategoryId: number | null = null;
+  SubcategoryTagName: string = '';
 
   // custom fields editor
   customFields: Array<{ key: string; type: string; required?: boolean }> = [];
@@ -31,10 +32,14 @@ export class AddDetailedCategory implements OnInit {
     timer?: any;
   }> = [];
 
-  model: Partial<DetailedCategory> = { Name: '', ParentId: null, Description: '', CustomSchema: '' };
+  model: Partial<DetailedCategory> = { Name: '', ParentId: null, SubcategoryTagName: '', Description: '', CustomSchema: '' };
   isSaving: boolean = false;
   saveMessage: string = '';
   saveError: string = '';
+
+  get isSubcategory(): boolean {
+    return !!this.model.ParentId;
+  }
 
   get isCustomFieldsDisabled(): boolean {
     return !this.model.ParentId;
@@ -93,13 +98,25 @@ export class AddDetailedCategory implements OnInit {
     this.crud.getDetailedCategory(cat.DetailedCategoryId!).subscribe({
       next: (detail) => {
         this.editingId = detail.DetailedCategoryId ?? null;
-        this.model = { Name: detail.Name, ParentId: detail.ParentId ?? null, Description: detail.Description, CustomSchema: detail.CustomSchema };
+        this.model = {
+          Name: detail.Name,
+          ParentId: detail.ParentId ?? null,
+          SubcategoryTagName: detail.SubcategoryTagName ?? '',
+          Description: detail.Description,
+          CustomSchema: detail.CustomSchema
+        };
         try { this.customFields = detail.CustomSchema ? JSON.parse(detail.CustomSchema) : []; } catch { this.customFields = []; }
         this.cd.detectChanges();
       },
       error: () => {
         this.editingId = cat.DetailedCategoryId ?? null;
-        this.model = { Name: cat.Name, ParentId: cat.ParentId ?? null, Description: cat.Description, CustomSchema: cat.CustomSchema };
+        this.model = {
+          Name: cat.Name,
+          ParentId: cat.ParentId ?? null,
+          SubcategoryTagName: cat.SubcategoryTagName ?? '',
+          Description: cat.Description,
+          CustomSchema: cat.CustomSchema
+        };
         try { this.customFields = cat.CustomSchema ? JSON.parse(cat.CustomSchema) : []; } catch { this.customFields = []; }
         this.cd.detectChanges();
       }
@@ -115,7 +132,7 @@ export class AddDetailedCategory implements OnInit {
   clear() {
     this.editingId = null;
     this.selectedCategoryId = null;
-    this.model = { Name: '', ParentId: null, Description: '', CustomSchema: '' };
+    this.model = { Name: '', ParentId: null, SubcategoryTagName: '', Description: '', CustomSchema: '' };
     this.customFields = [];
   }
 
@@ -193,10 +210,17 @@ export class AddDetailedCategory implements OnInit {
   save(f: NgForm) {
     if (!f.valid) return;
     this.saveError = '';
+    const normalizedTag = (this.model.SubcategoryTagName || '').toString().trim().toUpperCase();
+    if (this.model.ParentId && normalizedTag.length !== 3) {
+      this.saveError = 'Subcategory tag must be exactly 3 characters.';
+      return;
+    }
+
     // Build payload and validate CustomSchema
     const payload: Partial<DetailedCategory> = {
       Name: (this.model.Name || '').toString(),
       ParentId: this.model.ParentId,
+      SubcategoryTagName: this.model.ParentId ? normalizedTag : null,
       Description: this.model.Description
     };
 

@@ -27,6 +27,7 @@ export class AssignmentsDetailedList implements OnInit {
   categoryFilter?: number;
   page = 1;
   pageSize = 10;
+  isSubmitting = false;
 
   constructor(
     private readonly crud: OimsCrudService,
@@ -73,7 +74,7 @@ export class AssignmentsDetailedList implements OnInit {
   get filteredAssets() {
     const q = this.search?.toLowerCase().trim();
     return this.assets
-      .filter(asset => this.isSelected(asset) || (!this.assetHasOpenAssignment(asset) && !this.isUnderMaintenance(asset)))
+      .filter(asset => this.isSelected(asset) || (!this.assetHasOpenAssignment(asset) && !this.isBlockedForAssignment(asset)))
       .filter(asset => {
         if (this.categoryFilter) {
           return asset.DetailedCategoryId === this.categoryFilter;
@@ -116,8 +117,17 @@ export class AssignmentsDetailedList implements OnInit {
     return ['damaged', 'damage', 'maintenance'].includes(status);
   }
 
+  isSold(asset: DetailedAsset): boolean {
+    const status = (asset.Status || '').toLowerCase();
+    return ['sold', 'sold out', 'sold-out'].includes(status);
+  }
+
+  isBlockedForAssignment(asset: DetailedAsset): boolean {
+    return this.isUnderMaintenance(asset) || this.isSold(asset);
+  }
+
   toggleSelection(asset: DetailedAsset): void {
-    if (!asset.DetailedAssetId || this.assetHasOpenAssignment(asset) || this.isUnderMaintenance(asset)) {
+    if (!asset.DetailedAssetId || this.assetHasOpenAssignment(asset) || this.isBlockedForAssignment(asset)) {
       return;
     }
     const idx = this.selectedAssets.indexOf(asset.DetailedAssetId);
@@ -137,6 +147,9 @@ export class AssignmentsDetailedList implements OnInit {
   }
 
   submitAssignments(): void {
+    if (this.isSubmitting) {
+      return;
+    }
     if (!this.selectedEmployeeId) {
       this.notify.warn('Please select an employee to assign.');
       return;
@@ -145,6 +158,8 @@ export class AssignmentsDetailedList implements OnInit {
       this.notify.warn('Please select at least one asset.');
       return;
     }
+
+    this.isSubmitting = true;
 
     this.crud.assignDetailedAssetsBulk({
       DetailedAssetIds: [...this.selectedAssets],
@@ -157,6 +172,7 @@ export class AssignmentsDetailedList implements OnInit {
         this.selectedAssets = [];
         this.notes = '';
         this.acknowledge = false;
+        this.isSubmitting = false;
         this.loadAssignments();
         this.loadAssets();
 
@@ -169,6 +185,7 @@ export class AssignmentsDetailedList implements OnInit {
         this.notify.success(`Assigned ${assignedCount} asset(s) successfully.`);
       },
       error: () => {
+        this.isSubmitting = false;
         this.notify.error('Unable to assign selected assets.');
       }
     });
