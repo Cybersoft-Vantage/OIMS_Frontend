@@ -35,7 +35,7 @@
               <select name="DetailedCategoryId" #categoryModel="ngModel" class="form-select" [(ngModel)]="model.DetailedCategoryId"
                 (ngModelChange)="onCategoryChange($event)" required [ngClass]="{'is-invalid': categoryModel.invalid && categoryModel.touched}">
                 <option [ngValue]="undefined">-- select --</option>
-                <option *ngFor="let c of topCategories" [ngValue]="c.DetailedCategoryId">{{c.Name}}</option>
+                <option *ngFor="let c of visibleTopCategories" [ngValue]="c.DetailedCategoryId">{{c.Name}}</option>
               </select>
               <div class="invalid-feedback" *ngIf="categoryModel.invalid && categoryModel.touched">
                 Category is required.
@@ -55,7 +55,7 @@
             </div>
 
             <div class="col-md-6 mb-3">
-              <label class="form-label">Name <span class="text-danger">*</span></label>
+              <label class="form-label">Brand Name <span class="text-danger">*</span></label>
               <input name="Name" #nameModel="ngModel" [(ngModel)]="model.Name" required class="form-control" [ngClass]="{'is-invalid': nameModel.invalid && nameModel.touched}" />
               <div class="invalid-feedback" *ngIf="nameModel.invalid && nameModel.touched">
                 Name is required.
@@ -154,36 +154,51 @@
     <ng-template #assetList>
         <div class="card">
         <div class="card-header">
-          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3">
-            <h5 class="mb-0">Existing Detailed Assets</h5>
-            <div class="d-flex gap-2">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
+            <div>
+              <h5 class="mb-1">Existing Detailed Assets</h5>
+              <p class="text-muted mb-0">Browse the current inventory by category.</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+              <span class="count-badge">{{ filteredAssets.length }} asset(s)</span>
               <button class="btn btn-sm btn-outline-primary" type="button" (click)="openAssetTagModal()" [disabled]="!assets.length">Download AsssetTag</button>
-              <button class="btn btn-sm btn-outline-primary" type="button" (click)="downloadExistingAssetsXlsx()" [disabled]="!filteredAssets.length">Download XLSX</button>
+              <button class="btn btn-sm btn-outline-primary" type="button" (click)="downloadExistingAssetsPdf()" [disabled]="!filteredAssets.length">Download PDF</button>
+            </div>
+          </div>
+
+          <div class="filter-toolbar mt-3">
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-sm-6 col-lg-4">
+                <label class="filter-label" for="assetCategoryFilter">Parent Category</label>
+                <select id="assetCategoryFilter" class="form-select form-select-sm" [(ngModel)]="selectedFilterCategoryId"
+                  (ngModelChange)="onAssetFilterCategoryChange($event)">
+                  <option [ngValue]="null">All Parent Categories</option>
+                  <option *ngFor="let category of visibleTopCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
+                </select>
+              </div>
+              <div class="col-12 col-sm-6 col-lg-4">
+                <label class="filter-label" for="assetSubCategoryFilter">Subcategory</label>
+                <select id="assetSubCategoryFilter" class="form-select form-select-sm" [(ngModel)]="selectedFilterSubCategory"
+                  [disabled]="!selectedFilterCategoryId">
+                  <option value="">All Subcategories</option>
+                  <option *ngFor="let category of assetFilterSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
+                </select>
+              </div>
+              <div class="col-12 col-sm-8 col-lg-2 text-muted small align-self-center">
+                Showing {{ filteredAssets.length }} of {{ assets.length }}
+              </div>
+              <div class="col-12 col-sm-4 col-lg-2 d-grid">
+                <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetAssetFilters()"
+                  [disabled]="!hasAssetFilters">Reset</button>
+              </div>
             </div>
           </div>
         </div>
         <div class="card-body">
-      <div class="row g-2 mb-3">
-        <div class="col-md-4">
-          <select class="form-select form-select-sm" [(ngModel)]="selectedFilterCategoryId" (ngModelChange)="onAssetFilterCategoryChange($event)">
-            <option [ngValue]="null">All Parent Categories</option>
-            <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
-          </select>
-        </div>
-        <div class="col-md-4">
-          <select class="form-select form-select-sm" [(ngModel)]="selectedFilterSubCategory" [disabled]="!selectedFilterCategoryId">
-            <option value="">All Subcategories</option>
-            <option *ngFor="let category of assetFilterSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
-          </select>
-        </div>
-        <div class="col-md-4 text-md-end text-muted small align-self-center">
-          Showing {{ filteredAssets.length }} asset(s)
-        </div>
-      </div>
       <table class="table table-striped">
         <thead>
           <tr>
-            <th>Name</th>
+            <th>Brand Name</th>
             <th>Tag</th>
             <th>Category</th>
             <th>Serial</th>
@@ -238,8 +253,8 @@
         <div class="modal-header">
           <h5 class="modal-title">Download AsssetTag</h5>
           <div class="ms-auto d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-primary" type="button" (click)="downloadAssetTagsXlsx()" [disabled]="!anyAssetTagSelected()">Download XLSX</button>
-            <button type="button" class="btn-close" aria-label="Close" (click)="closeAssetTagModal()"></button>
+            <button class="btn btn-sm btn-primary" type="button" (click)="downloadAssetTagsPdf()" [disabled]="!anyAssetTagSelected()">Download PDF</button>
+            <button type="button" class="btn-close close" aria-label="Close" (click)="closeAssetTagModal()"></button>
           </div>
         </div>
         <div class="modal-body">
@@ -247,7 +262,7 @@
             <div class="col-md-6">
               <select class="form-select form-select-sm" [(ngModel)]="assetTagFilterCategoryId" (ngModelChange)="onAssetTagModalCategoryChange($event)">
                 <option [ngValue]="null">All Parent Categories</option>
-                <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
+                <option *ngFor="let category of visibleTopCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
               </select>
             </div>
             <div class="col-md-6">
@@ -305,7 +320,7 @@
   </div>
   <div *ngIf="activeTab === 'import'">
     <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center mt-3">
         <div>
           <h5 class="mb-0">Import Detailed Assets</h5>
           <p class="text-muted mb-0">Download the template or upload a file to add bulk detailed assets.</p>

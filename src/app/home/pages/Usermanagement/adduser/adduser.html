@@ -26,28 +26,57 @@
   </div>
 
   <ng-container *ngIf="activeTab === 'users'">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-      <div class="d-flex align-items-center flex-wrap gap-2">
-        <h5 class="mb-0">Users</h5>
-        <div class="ms-4">
-          <input class="form-control form-control-sm" placeholder="Search" [(ngModel)]="search" />
-        </div>
+    <div class="card-header">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
         <div>
-          <select class="form-select form-select-sm" [(ngModel)]="roleFilter">
-            <option value="all">All roles</option>
-            <option value="employee">Employee</option>
-            <option value="admin">Admin</option>
-            <option value="hr">HR</option>
-          </select>
+          <h5 class="mb-1">Users</h5>
+          <p class="text-muted mb-0">Manage system users, their roles and access.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+          <span class="count-badge">{{ filteredEmployees.length }} user(s)</span>
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="openModal()">Add User</button>
         </div>
       </div>
-      <div>
-        <select class="form-select form-select-sm me-2" [(ngModel)]="pageSize">
-          <option [ngValue]="5">5</option>
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-        </select>
-        <button type="button" class="btn btn-outline-primary" (click)="openModal()">Add User</button>
+
+      <div class="filter-toolbar mt-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-12 col-sm-6 col-lg-5">
+            <label class="filter-label" for="userSearch">Search</label>
+            <div class="input-group input-group-sm filter-search">
+              <span class="input-group-text"><i class="feather icon-search"></i></span>
+              <input id="userSearch" class="form-control" placeholder="User ID, name, department or email"
+                [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+              <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+                (click)="clearSearch()"><i class="feather icon-x"></i></button>
+            </div>
+          </div>
+
+          <div class="col-12 col-sm-6 col-lg-3">
+            <label class="filter-label" for="userRoleFilter">Role</label>
+            <select id="userRoleFilter" class="form-select form-select-sm" [(ngModel)]="roleFilter"
+              (ngModelChange)="onFilterChange()">
+              <option value="all">All roles</option>
+              <option value="employee">Employee</option>
+              <option value="admin">Admin</option>
+              <option value="hr">HR</option>
+            </select>
+          </div>
+
+          <div class="col-6 col-sm-6 col-lg-2">
+            <label class="filter-label" for="userPageSize">Show</label>
+            <select id="userPageSize" class="form-select form-select-sm" [(ngModel)]="pageSize"
+              (ngModelChange)="onFilterChange()">
+              <option [ngValue]="5">5</option>
+              <option [ngValue]="10">10</option>
+              <option [ngValue]="25">25</option>
+            </select>
+          </div>
+
+          <div class="col-6 col-sm-6 col-lg-2 d-grid">
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+              [disabled]="!hasActiveFilters">Reset</button>
+          </div>
+        </div>
       </div>
     </div>
     <div class="card-body">

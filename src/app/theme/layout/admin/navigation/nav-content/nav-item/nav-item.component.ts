@@ -46,12 +46,10 @@ export class NavItemComponent {
       }
     }
 
-    const isMobile = window.innerWidth < 992;
-    if (isMobile) {
+    // Close the mobile drawer after navigating. The `mob-open` class follows this
+    // state through the layout binding, so it must not also be stripped by hand.
+    if (window.innerWidth < 992) {
       this.layoutState.closeNavCollapsedMob();
-      if (document.querySelector('app-navigation.pcoded-navbar')?.classList.contains('mob-open')) {
-        document.querySelector('app-navigation.pcoded-navbar')?.classList.remove('mob-open');
-      }
     }
   }
 }

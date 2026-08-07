@@ -47,6 +47,29 @@ export class Userhistory implements OnInit {
     this.loadHistory();
   }
 
+  onFilterChange(): void {
+    this.page = 1;
+  }
+
+  clearSearch(): void {
+    this.search = '';
+    this.onFilterChange();
+  }
+
+  get hasActiveFilters(): boolean {
+    return this.selectedAssetId != null || !!this.search?.trim();
+  }
+
+  resetFilters(): void {
+    const reloadHistory = this.selectedAssetId != null;
+    this.selectedAssetId = null;
+    this.search = '';
+    this.page = 1;
+    if (reloadHistory) {
+      this.loadHistory();
+    }
+  }
+
   openViewModal(assetId: number) {
     // Load asset detail and latest assignment, then open modal when ready
     this.crud.getDetailedAsset(assetId).subscribe({

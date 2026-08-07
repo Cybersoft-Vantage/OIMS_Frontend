@@ -36,7 +36,7 @@
       }
     </div>
   } @else {
-    <div class="row g-4 mt-1">
+    <div class="row">
       @for (card of summaryCards; track $index) {
         <div class="col-12 col-sm-6 col-xl-3">
           <app-card [hidHeader]="true" cardClass="metric-card h-100 dashboard-card">

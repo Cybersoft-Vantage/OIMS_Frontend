@@ -1,6 +1,8 @@
 .card {
   .card-header {
-    .btn {
+    // Sizing for the header action buttons (Download PDF), not the filter toolbar -
+    // toolbar buttons size to their own column, see scss/_inventory-filters.scss.
+    > .d-flex .btn {
       min-width: 130px;
     }
   }

@@ -41,12 +41,17 @@ File: style.css
 @import 'scss/themes/layouts/pc-footer.scss';
 @import 'scss/themes/layouts/menu-lite';
 @import 'scss/themes/layouts/menu-ng';
+// must follow the two above: it overrides their collapsed-sidebar rules
+@import 'scss/themes/layouts/menu-collapsed';
 
 // dashboard
 @import 'scss/themes/pages/dashboard.scss';
 @import 'scss/themes/pages/authentication';
 
 @import 'scss/themes/chat/chat';
+
+// shared inventory filter toolbar
+@import 'scss/inventory-filters';
 
 // custom
 @import 'scss/themes/custom';
