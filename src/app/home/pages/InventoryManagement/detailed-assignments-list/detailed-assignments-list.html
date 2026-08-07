@@ -1,28 +1,59 @@
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center">
-      <h5 class="mb-0">Detailed Asset Assignments</h5>
-      <div class="ms-4">
-        <input class="form-control form-control-sm" placeholder="Search assignments" [(ngModel)]="search" />
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
+      <div>
+        <h5 class="mb-1">Asset Assignment Return</h5>
+        <p class="text-muted mb-0">Return assets that are currently out with an employee.</p>
       </div>
-      <div class="ms-3">
-        <select class="form-select form-select-sm" [(ngModel)]="employeeFilter">
-          <option [ngValue]="undefined">All Employees</option>
-          <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
-        </select>
-      </div>
-      <div class="ms-3">
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleReturnView()">
-          {{ onlyNotReturned ? 'Show All' : 'Only Not Returned' }}
-        </button>
-      </div>
+      <span class="count-badge">{{ filteredAssignments.length }} assignment(s)</span>
     </div>
-    <div class="d-flex gap-2 align-items-center">
-      <select class="form-select form-select-sm" [(ngModel)]="pageSize">
-        <option [ngValue]="5">5</option>
-        <option [ngValue]="10">10</option>
-        <option [ngValue]="25">25</option>
-      </select>
+
+    <div class="filter-toolbar mt-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="filter-label" for="returnSearch">Search</label>
+          <div class="input-group input-group-sm filter-search">
+            <span class="input-group-text"><i class="feather icon-search"></i></span>
+            <input id="returnSearch" class="form-control" placeholder="Asset tag, name or employee"
+              [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+            <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+              (click)="clearSearch()"><i class="feather icon-x"></i></button>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="filter-label" for="returnEmployeeFilter">Employee</label>
+          <select id="returnEmployeeFilter" class="form-select form-select-sm" [(ngModel)]="employeeFilter"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="undefined">All Employees</option>
+            <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="filter-label" for="returnStatusFilter">Return Status</label>
+          <select id="returnStatusFilter" class="form-select form-select-sm" [(ngModel)]="onlyNotReturned"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="true">Not returned only</option>
+            <option [ngValue]="false">All assignments</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-sm-3 col-lg-1">
+          <label class="filter-label" for="returnPageSize">Show</label>
+          <select id="returnPageSize" class="form-select form-select-sm" [(ngModel)]="pageSize"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-sm-3 col-lg-1 d-grid">
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+            [disabled]="!hasActiveFilters">Reset</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card-body">

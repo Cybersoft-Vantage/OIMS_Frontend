@@ -555,6 +555,22 @@ export class Maintenance implements OnInit {
     this.historyPage = Math.max(1, Math.min(this.maintenanceHistoryTotalPages, page));
   }
 
+  clearHistorySearch(): void {
+    this.historySearch = '';
+    this.historyPage = 1;
+  }
+
+  get hasHistoryFilters(): boolean {
+    return !!this.historySearch?.trim() || !!this.historyStatusFilter || this.historyVendorFilter != null;
+  }
+
+  resetHistoryFilters(): void {
+    this.historySearch = '';
+    this.historyStatusFilter = '';
+    this.historyVendorFilter = null;
+    this.historyPage = 1;
+  }
+
   statusLabel(status: string): string {
     return status ? status.toString().replace(/\b\w/g, (char) => char.toUpperCase()) : 'Unknown';
   }

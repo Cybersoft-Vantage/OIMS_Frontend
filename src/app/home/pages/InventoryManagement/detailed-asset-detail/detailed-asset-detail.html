@@ -19,7 +19,7 @@
                         <input class="form-control" name="AssetTag" [(ngModel)]="model.AssetTag" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Name <span class="text-danger">*</span></label>
+                        <label class="form-label">Brand Name <span class="text-danger">*</span></label>
                         <input class="form-control" name="Name" #editNameModel="ngModel" [(ngModel)]="model.Name" required [ngClass]="{'is-invalid': editNameModel.invalid && editNameModel.touched}" />
                         <div class="invalid-feedback" *ngIf="editNameModel.invalid && editNameModel.touched">
                             Name is required.
@@ -79,20 +79,34 @@
                     </div>
                     <div class="col-md-12">
                         <label class="form-label">Custom Values</label>
-                        <div *ngIf="customValuesDisplay.length; else customJson">
-                            <div class="row g-2">
-                                <div class="col-md-4" *ngFor="let item of customValuesDisplay">
-                                    <div class="border rounded p-2 mb-2">
-                                        <div class="fw-semibold">{{ item.key }}</div>
-                                        <div class="text-muted">{{ item.value }}</div>
-                                    </div>
+                        <div *ngIf="customFieldRows.length; else customJson">
+                            <div class="row g-3">
+                                <div class="col-md-4" *ngFor="let row of customFieldRows">
+                                    <label class="form-label" [attr.for]="controlName(row.key)">{{ row.key }}</label>
+                                    <input *ngIf="row.type === 'text' || row.type === 'number'"
+                                        [type]="row.type === 'number' ? 'number' : 'text'" class="form-control"
+                                        [id]="controlName(row.key)" [name]="controlName(row.key)"
+                                        [(ngModel)]="row.value" />
+                                    <input *ngIf="row.type === 'date'" type="date" class="form-control"
+                                        [id]="controlName(row.key)" [name]="controlName(row.key)"
+                                        [(ngModel)]="row.value" />
+                                    <select *ngIf="row.type === 'boolean'" class="form-select"
+                                        [id]="controlName(row.key)" [name]="controlName(row.key)"
+                                        [(ngModel)]="row.value">
+                                        <option [ngValue]="null">-- select --</option>
+                                        <option [ngValue]="true">True</option>
+                                        <option [ngValue]="false">False</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
                         <ng-template #customJson>
-                            <textarea class="form-control" rows="3" [value]="model.CustomValues || '{}'"
-                                disabled></textarea>
+                            <label class="form-text">No custom schema defined for this category. You may edit the raw
+                                JSON below.</label>
+                            <textarea class="form-control" rows="3" name="CustomValues"
+                                [(ngModel)]="customValuesRaw" placeholder='{"cpu":"i7","ram":"16GB"}'></textarea>
                         </ng-template>
+                        <div class="text-danger small mt-1" *ngIf="customValuesError">{{ customValuesError }}</div>
                     </div>
                 </div>
                 <div class="mt-3 text-end">
@@ -118,10 +132,34 @@
         </div>
         <div class="card-body">
 
-            <div class="row mb-3">
-                <div class="col-md-4">
-                    <input class="form-control form-control-sm" placeholder="Search history" [(ngModel)]="historySearch"
-                        (ngModelChange)="resetHistoryPage()" />
+            <div class="filter-toolbar mb-3">
+                <div class="row g-2 align-items-end">
+                    <div class="col-12 col-sm-8 col-lg-5">
+                        <label class="filter-label" for="assetHistorySearch">Search</label>
+                        <div class="input-group input-group-sm filter-search">
+                            <span class="input-group-text"><i class="feather icon-search"></i></span>
+                            <input id="assetHistorySearch" class="form-control" placeholder="Action, employee, notes or date"
+                                [(ngModel)]="historySearch" (ngModelChange)="resetHistoryPage()" />
+                            <button *ngIf="historySearch" class="btn btn-outline-secondary" type="button"
+                                title="Clear search" (click)="clearHistorySearch()"><i class="feather icon-x"></i></button>
+                        </div>
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-2">
+                        <label class="filter-label" for="assetHistoryRows">Show</label>
+                        <select id="assetHistoryRows" class="form-select form-select-sm" [(ngModel)]="historyPageSize"
+                            (ngModelChange)="resetHistoryPage()">
+                            <option [ngValue]="10">10</option>
+                            <option [ngValue]="25">25</option>
+                            <option [ngValue]="50">50</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-sm-8 col-lg-3 text-muted small align-self-center">
+                        Showing {{ filteredHistory.length }} of {{ history.length }} event(s)
+                    </div>
+                    <div class="col-6 col-sm-4 col-lg-2 d-grid">
+                        <button class="btn btn-sm btn-outline-secondary" type="button" (click)="clearHistorySearch()"
+                            [disabled]="!historySearch">Reset</button>
+                    </div>
                 </div>
             </div>
             <div class="table-responsive table-scroll-x">

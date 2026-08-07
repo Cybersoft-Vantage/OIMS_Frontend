@@ -1,148 +1,472 @@
-<div class="card category-editor-card">
-  <div class="card-header">
-    <div class="d-flex align-items-center justify-content-between">
-      <h5 class="mb-0">Categories</h5>
-      <button class="btn btn-sm btn-primary" type="button" (click)="clear()">+ Add Category</button>
+<div class="card-header">
+  <ul class="nav nav-tabs mb-2">
+    <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'addcategory'" type="button"
+        (click)="setActiveTab('addcategory')">Add Category</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'showcategory'" type="button"
+        (click)="setActiveTab('showcategory')">Show Categories</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'visibility'" type="button"
+        (click)="setActiveTab('visibility')">Show / Hide
+        <span *ngIf="hiddenCount" class="badge bg-secondary ms-1">{{ hiddenCount }}</span></button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'customfields'" type="button"
+        (click)="setActiveTab('customfields')">Custom Fields</button></li>
+    <li class="nav-item"><button class="nav-link" [class.active]="activeTab === 'deleted'" type="button"
+        (click)="setActiveTab('deleted')">Deleted Categories
+        <span *ngIf="deletedCategories.length" class="badge bg-secondary ms-1">{{ deletedCategories.length }}</span></button></li>
+  </ul>
+</div>
+
+<div class="card-body">
+
+  <!-- ------------------------------------------------------- Add / Edit tab -->
+  <div *ngIf="activeTab === 'addcategory'">
+    <div class="card category-editor-card">
+      <div class="card-header">
+        <div class="d-flex align-items-center justify-content-between">
+          <h5 class="mb-0 mt-3">{{ editingId != null ? 'Edit Category' : 'Add Category' }}</h5>
+          <button class="btn btn-sm btn-primary" type="button" (click)="clear()">+ Add Category</button>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="row gx-4">
+          <div class="col-lg-4">
+            <div class="card h-100 category-tree-card shadow-sm">
+              <div class="card-body">
+                <ul class="list-group category-tree">
+                  <li *ngFor="let c of categories" class="list-group-item border-0 px-0 py-2">
+                    <div class="d-flex align-items-center justify-content-between">
+                      <button type="button" class="btn btn-link p-0 text-start category-name"
+                        [class.selected]="selectedCategoryId===c.DetailedCategoryId" (click)="edit(c)">{{ c.Name }}</button>
+                      <span *ngIf="isHidden(c)" class="badge badge-hidden ms-2">Hidden</span>
+                    </div>
+                    <ul *ngIf="c.children && c.children.length" class="list-group mt-2 child-list">
+                      <li *ngFor="let child of c.children" class="list-group-item border-0 px-0 py-2 child-item">
+                        <div class="d-flex align-items-center justify-content-between">
+                          <button type="button" class="btn btn-link p-0 text-start category-name"
+                            [class.selected]="selectedCategoryId===child.DetailedCategoryId" (click)="edit(child)">{{ child.Name }}</button>
+                          <span *ngIf="isHidden(child)" class="badge badge-hidden ms-2">Hidden</span>
+                        </div>
+                      </li>
+                    </ul>
+                  </li>
+                  <li *ngIf="!categories.length" class="list-group-item border-0 px-0 py-2 text-muted">
+                    No categories yet.
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <div class="card h-100 shadow-sm category-form-card">
+              <div class="card-body">
+                <h6 class="card-title mb-4">Add / Edit Category</h6>
+                <form #f="ngForm" (ngSubmit)="save(f)">
+
+                  <div class="mb-3">
+                    <label class="form-label">Parent Category</label>
+                    <select name="ParentId" class="form-select" [(ngModel)]="model.ParentId" [disabled]="isParentSelectorDisabled">
+                      <option [ngValue]="null">-- none --</option>
+                      <option *ngFor="let c of flatCategories" [ngValue]="c.id">{{ c.name }}</option>
+                    </select>
+                    <div class="form-text">Leave empty to create a top-level category.</div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Category Name *</label>
+                    <input name="Name" class="form-control" [(ngModel)]="model.Name" required />
+                  </div>
+
+                  <div class="mb-3" *ngIf="isSubcategory">
+                    <label class="form-label">Subcategory Tag Name *</label>
+                    <input
+                      #SubcategoryTagName="ngModel"
+                      name="SubcategoryTagName"
+                      class="form-control text-uppercase"
+                      [(ngModel)]="model.SubcategoryTagName"
+                      required
+                    />
+                    <div class="form-text">Use exactly 3 characters (example: LPT).</div>
+                    <div class="invalid-feedback" *ngIf="SubcategoryTagName.invalid && SubcategoryTagName.touched">
+                      Sub-Category Tag name is required.
+                    </div>
+                  </div>
+
+                  <div class="mb-3">
+                    <label class="form-label">Category description</label>
+                    <textarea name="Description" class="form-control" rows="3" [(ngModel)]="model.Description"></textarea>
+                  </div>
+
+                  <div class="mb-4">
+                    <fieldset [disabled]="isCustomFieldsDisabled">
+                      <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div>
+                          <label class="form-label mb-0">Custom fields for this category</label>
+                          <div class="form-text">Extra attributes captured when adding an asset in this category.</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" (click)="addField()">+ Add field</button>
+                      </div>
+                      <div *ngIf="saveError" class="mb-2"><small class="text-danger">{{ saveError }}</small></div>
+                      <div *ngIf="pendingOps && pendingOps.length" class="mb-2">
+                        <div *ngFor="let p of pendingOps" class="alert alert-warning py-2 d-flex align-items-center justify-content-between">
+                          <div class="small">Pending {{ p.type === 'add' ? 'add' : 'remove' }}: <strong>{{ p.field.key }}</strong></div>
+                          <div>
+                            <button class="btn btn-sm btn-link" type="button" (click)="undoPendingOp(p.id)">Undo</button>
+                            <button class="btn btn-sm btn-primary ms-2" type="button" (click)="confirmPendingOp(p.id)">Confirm</button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="table-responsive">
+                        <table class="table table-borderless mb-0 align-middle">
+                          <thead>
+                            <tr>
+                              <th>Field name</th>
+                              <th>Type</th>
+                              <th class="text-center">Req</th>
+                              <th></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let f of customFields; index as i">
+                              <td>{{ f.key }}</td>
+                              <td>{{ f.type }}</td>
+                              <td class="text-center">{{ f.required ? 'Yes' : 'No' }}</td>
+                              <td class="text-end">
+                                <button class="btn btn-sm btn-link text-danger feather icon-trash-2" type="button" (click)="removeField(i)"></button>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <input class="form-control" [(ngModel)]="newField.key" name="newFieldKey" placeholder="Field name" />
+                              </td>
+                              <td>
+                                <select class="form-select" [(ngModel)]="newField.type" name="newFieldType">
+                                  <option value="text">Text</option>
+                                  <option value="number">Number</option>
+                                  <option value="date">Date</option>
+                                  <option value="boolean">Boolean</option>
+                                </select>
+                              </td>
+                              <td class="text-center">
+                                <input class="form-check-input" type="checkbox" [(ngModel)]="newField.required" name="newFieldReq" />
+                              </td>
+                              <td></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </fieldset>
+                  </div>
+
+                  <div class="d-flex justify-content-between gap-2 align-items-center">
+                    <button class="btn btn-outline-secondary" type="button" (click)="clear()">Cancel</button>
+                    <div class="d-flex align-items-center gap-2">
+                      <button *ngIf="editingId != null" class="btn btn-outline-danger me-2" type="button" (click)="deleteCategory(editingId)">Delete</button>
+                      <button class="btn btn-primary" type="submit" [disabled]="isSaving">
+                        <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span *ngIf="!isSaving">Save</span>
+                        <span *ngIf="isSaving">Saving...</span>
+                      </button>
+                      <div *ngIf="saveMessage" class="ms-2 text-success small">{{ saveMessage }}</div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="card-body">
-    <div class="row gx-4">
-      <div class="col-lg-4">
-        <div class="card h-100 category-tree-card shadow-sm">
-          <div class="card-body">
-            <!-- <h6 class="card-title mb-3">Categories</h6> -->
-            <ul class="list-group category-tree">
-              <li *ngFor="let c of categories" class="list-group-item border-0 px-0 py-2">
-                <div class="d-flex align-items-center justify-content-between">
-                  <button type="button" class="btn btn-link p-0 text-start category-name" [class.selected]="selectedCategoryId===c.DetailedCategoryId" (click)="edit(c)">{{ c.Name }}</button>
-                  <!-- <button class="btn btn-sm btn-outline-secondary" type="button" (click)="addChildTo(c)">Add Child</button> -->
-                </div>
-                <ul *ngIf="c.children && c.children.length" class="list-group mt-2 child-list">
-                  <li *ngFor="let child of c.children" class="list-group-item border-0 px-0 py-2 child-item">
-                    <div class="d-flex align-items-center justify-content-between">
-                      <button type="button" class="btn btn-link p-0 text-start category-name" [class.selected]="selectedCategoryId===child.DetailedCategoryId" (click)="edit(child)">{{ child.Name }}</button>
-                    </div>
-                  </li>
-                </ul>
-              </li>
-            </ul>
+  <!-- ----------------------------------------------------- Show Categories -->
+  <div *ngIf="activeTab === 'showcategory'">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
+          <div>
+            <h5 class="mb-1">Existing Categories</h5>
+            <p class="text-muted mb-0">Parent categories, their subcategories and how many assets each holds.</p>
+          </div>
+          <div class="d-flex gap-2 flex-wrap">
+            <span class="count-badge">{{ parentCount }} parent(s)</span>
+            <span class="count-badge">{{ subCategoryCount }} subcategory(ies)</span>
+            <span class="count-badge" *ngIf="hiddenCount">{{ hiddenCount }} hidden</span>
+          </div>
+        </div>
+
+        <div class="filter-toolbar mt-3">
+          <div class="row g-2 align-items-end">
+            <div class="col-12 col-sm-6 col-lg-4">
+              <label class="filter-label" for="categorySearch">Search</label>
+              <div class="input-group input-group-sm filter-search">
+                <span class="input-group-text"><i class="feather icon-search"></i></span>
+                <input id="categorySearch" class="form-control" placeholder="Name, tag, description or parent"
+                  [(ngModel)]="search" />
+                <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+                  (click)="search = ''"><i class="feather icon-x"></i></button>
+              </div>
+            </div>
+            <div class="col-6 col-sm-3 col-lg-3">
+              <label class="filter-label" for="categoryTypeFilter">Type</label>
+              <select id="categoryTypeFilter" class="form-select form-select-sm" [(ngModel)]="typeFilter">
+                <option value="all">All levels</option>
+                <option value="parent">Parent categories</option>
+                <option value="sub">Subcategories</option>
+              </select>
+            </div>
+            <div class="col-6 col-sm-3 col-lg-3">
+              <label class="filter-label" for="categoryVisibilityFilter">Visibility</label>
+              <select id="categoryVisibilityFilter" class="form-select form-select-sm" [(ngModel)]="visibilityFilter">
+                <option value="all">All</option>
+                <option value="visible">Visible only</option>
+                <option value="hidden">Hidden only</option>
+              </select>
+            </div>
+            <div class="col-12 col-lg-2 d-grid">
+              <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+                [disabled]="!hasOverviewFilters">Reset</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="col-lg-8">
-        <div class="card h-100 shadow-sm category-form-card">
-          <div class="card-body">
-            <h6 class="card-title mb-4">Add / Edit Category</h6>
-            <form #f="ngForm" (ngSubmit)="save(f)">
-
-              <div class="mb-3">
-                <label class="form-label">Parent Category</label>
-                <select name="ParentId" class="form-select" [(ngModel)]="model.ParentId" [disabled]="isParentSelectorDisabled">
-                  <option [ngValue]="null">-- none --</option>
-                  <option *ngFor="let c of flatCategories" [ngValue]="c.id">{{ c.name }}</option>
-                </select>
-                <div class="form-text">Leave empty to create a top-level category.</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Category Name *</label>
-                <input name="Name" class="form-control" [(ngModel)]="model.Name" required />
-              </div>
-
-              <div class="mb-3" *ngIf="isSubcategory">
-                <label class="form-label">Subcategory Tag Name *</label>
-                <input
-                  name="SubcategoryTagName"
-                  class="form-control text-uppercase"
-                  [(ngModel)]="model.SubcategoryTagName"
-                  maxlength="3"
-                  required
-                />
-                <div class="form-text">Use exactly 3 characters (example: LPT).</div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Category description</label>
-                <textarea name="Description" class="form-control" rows="3" [(ngModel)]="model.Description"></textarea>
-              </div>
-
-              <div class="mb-4">
-                <fieldset [disabled]="isCustomFieldsDisabled">
-                  <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div>
-                      <label class="form-label mb-0">Custom fields for this category</label>
-                      <div class="form-text">Extra attributes captured when adding an asset in this category.</div>
-                    </div>
-                    <button type="button" class="btn btn-sm btn-outline-primary" (click)="addField()">+ Add field</button>
-                  </div>
-                    <div *ngIf="saveError" class="mb-2"><small class="text-danger">{{ saveError }}</small></div>
-                    <div *ngIf="pendingOps && pendingOps.length" class="mb-2">
-                      <div *ngFor="let p of pendingOps" class="alert alert-warning py-2 d-flex align-items-center justify-content-between">
-                        <div class="small">Pending {{ p.type === 'add' ? 'add' : 'remove' }}: <strong>{{ p.field.key }}</strong></div>
-                        <div>
-                          <button class="btn btn-sm btn-link" type="button" (click)="undoPendingOp(p.id)">Undo</button>
-                          <button class="btn btn-sm btn-primary ms-2" type="button" (click)="confirmPendingOp(p.id)">Confirm</button>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="table-responsive">
-                    <table class="table table-borderless mb-0 align-middle">
-                      <thead>
-                        <tr>
-                          <th>Field name</th>
-                            <th>Type</th>
-                            <th class="text-center">Req</th>
-                            <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr *ngFor="let f of customFields; index as i">
-                          <td>{{ f.key }}</td>
-                          <td>{{ f.type }}</td>
-                          <td class="text-center">{{ f.required ? 'Yes' : 'No' }}</td>
-                          <td class="text-end">
-                            <button class="btn btn-sm btn-link text-danger feather icon-trash-2" type="button" (click)="removeField(i)"></button>
-                          </td>
-                        </tr>
-                        <tr>
-                          <td>
-                            <input class="form-control" [(ngModel)]="newField.key" name="newFieldKey" placeholder="Field name" />
-                          </td>
-                          <td>
-                            <select class="form-select" [(ngModel)]="newField.type" name="newFieldType">
-                              <option value="text">Text</option>
-                              <option value="number">Number</option>
-                              <option value="date">Date</option>
-                              <option value="boolean">Boolean</option>
-                            </select>
-                          </td>
-                          <td class="text-center">
-                            <input class="form-check-input" type="checkbox" [(ngModel)]="newField.required" name="newFieldReq" />
-                          </td>
-                          <td></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </fieldset>
-              </div>
-
-              <div class="d-flex justify-content-between gap-2 align-items-center">
-                <button class="btn btn-outline-secondary" type="button" (click)="clear()">Cancel</button>
-                <div class="d-flex align-items-center gap-2">
-                  <button *ngIf="editingId != null" class="btn btn-outline-danger me-2" type="button" (click)="deleteCategory(editingId)">Delete</button>
-                  <button class="btn btn-primary" type="submit" [disabled]="isSaving">
-                    <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                    <span *ngIf="!isSaving">Save</span>
-                    <span *ngIf="isSaving">Saving...</span>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Level</th>
+                <th>Parent</th>
+                <th>Tag</th>
+                <th class="text-center">Subcategories</th>
+                <th class="text-center">Assets</th>
+                <th class="text-center">Custom fields</th>
+                <th class="text-center">Visibility</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of filteredCategoryRows; let i = index" [class.row-hidden]="isHidden(row.category)">
+                <td>{{ i + 1 }}</td>
+                <td>
+                  <span [class.ps-3]="row.isSubcategory" class="fw-semibold">{{ row.category.Name }}</span>
+                  <div class="text-muted small" *ngIf="row.category.Description">{{ row.category.Description }}</div>
+                </td>
+                <td>
+                  <span class="badge" [class.bg-primary]="!row.isSubcategory" [class.bg-info]="row.isSubcategory">
+                    {{ row.isSubcategory ? 'Subcategory' : 'Parent' }}
+                  </span>
+                </td>
+                <td>{{ row.parent?.Name || '-' }}</td>
+                <td>{{ row.category.SubcategoryTagName || '-' }}</td>
+                <td class="text-center">{{ row.isSubcategory ? '-' : (row.category.children?.length || 0) }}</td>
+                <td class="text-center">{{ getAssetCount(row.category, row.parent) }}</td>
+                <td class="text-center">{{ getCustomFieldCount(row.category) }}</td>
+                <td class="text-center">
+                  <span class="badge" [class.bg-success]="!isHidden(row.category)" [class.bg-secondary]="isHidden(row.category)">
+                    {{ isHidden(row.category) ? 'Hidden' : 'Visible' }}
+                  </span>
+                </td>
+                <td class="text-end text-nowrap">
+                  <button class="btn btn-sm btn-outline-secondary me-2" type="button" (click)="editInFormTab(row.category)">Edit</button>
+                  <button class="btn btn-sm me-2" type="button"
+                    [class.btn-outline-secondary]="!isHidden(row.category)"
+                    [class.btn-outline-success]="isHidden(row.category)"
+                    [disabled]="isVisibilityPending(row.category)"
+                    (click)="toggleVisibility(row.category, row.parent)">
+                    {{ isHidden(row.category) ? 'Show' : 'Hide' }}
                   </button>
-                  <div *ngIf="saveMessage" class="ms-2 text-success small">{{ saveMessage }}</div>
-                </div>
-              </div>
-            </form>
+                  <button *ngIf="!row.isSubcategory" class="btn btn-sm btn-outline-primary me-2" type="button"
+                    (click)="addChildTo(row.category)">+ Sub</button>
+                  <button class="btn btn-sm btn-danger" type="button" (click)="deleteCategory(row.category.DetailedCategoryId)">Delete</button>
+                </td>
+              </tr>
+              <tr *ngIf="!filteredCategoryRows.length">
+                <td colspan="10" class="text-center text-muted">No categories found for the selected filters.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card-footer">
+        <small class="text-muted">Showing {{ filteredCategoryRows.length }} of {{ categoryRows.length }} category record(s)</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- --------------------------------------------------------- Show / Hide -->
+  <div *ngIf="activeTab === 'visibility'">
+    <div class="card">
+      <div class="card-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
+          <div>
+            <h5 class="mb-1">Show / Hide Categories</h5>
+            <p class="text-muted mb-0">
+              Hiding a category removes its assets from the asset list and the category pickers.
+              Nothing is deleted and no assignment history is affected.
+            </p>
           </div>
+          <div class="d-flex gap-2 align-items-center flex-wrap">
+            <span class="count-badge" *ngIf="hiddenAssetCount">{{ hiddenAssetCount }} asset(s) hidden</span>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="setAllVisibility(true)"
+              [disabled]="!categories.length">Hide all</button>
+            <button class="btn btn-sm btn-outline-success" type="button" (click)="setAllVisibility(false)"
+              [disabled]="!categories.length">Show all</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div *ngIf="!categories.length" class="text-center text-muted py-4">No categories to manage yet.</div>
+
+        <div *ngFor="let parent of categories" class="visibility-group mb-3">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 visibility-row">
+            <div>
+              <div class="fw-semibold">
+                {{ parent.Name }}
+                <span *ngIf="isHidden(parent)" class="badge badge-hidden ms-2">Hidden</span>
+              </div>
+              <div class="text-muted small">
+                {{ parent.children?.length || 0 }} subcategory(ies) · {{ getAssetCount(parent) }} asset(s) directly in this category
+              </div>
+            </div>
+            <div class="form-check form-switch mb-0">
+              <input class="form-check-input" type="checkbox" role="switch"
+                [id]="'vis_parent_' + parent.DetailedCategoryId"
+                [checked]="!isHidden(parent)"
+                [disabled]="isVisibilityPending(parent)"
+                (click)="$event.preventDefault(); toggleVisibility(parent)" />
+              <label class="form-check-label ms-2" [attr.for]="'vis_parent_' + parent.DetailedCategoryId">
+                {{ isHidden(parent) ? 'Hidden' : 'Visible' }}
+              </label>
+            </div>
+          </div>
+
+          <div *ngIf="parent.children && parent.children.length" class="visibility-children mt-2">
+            <div *ngFor="let child of parent.children"
+              class="d-flex align-items-center justify-content-between flex-wrap gap-2 visibility-row child">
+              <div>
+                <div>
+                  {{ child.Name }}
+                  <span class="text-muted small ms-1" *ngIf="child.SubcategoryTagName">({{ child.SubcategoryTagName }})</span>
+                  <span *ngIf="isHidden(child)" class="badge badge-hidden ms-2">Hidden</span>
+                </div>
+                <div class="text-muted small">{{ getAssetCount(child, parent) }} asset(s) will be affected</div>
+              </div>
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" role="switch"
+                  [id]="'vis_child_' + child.DetailedCategoryId"
+                  [checked]="!isHidden(child)"
+                  [disabled]="isVisibilityPending(child)"
+                  (click)="$event.preventDefault(); toggleVisibility(child, parent)" />
+                <label class="form-check-label ms-2" [attr.for]="'vis_child_' + child.DetailedCategoryId">
+                  {{ isHidden(child) ? 'Hidden' : 'Visible' }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------- Custom Fields -->
+  <div *ngIf="activeTab === 'customfields'">
+    <div class="card">
+      <div class="card-header mt-3">
+        <h5 class="mb-1">Custom Fields by Category</h5>
+        <p class="text-muted mb-0">
+          Fields defined here are captured when an asset is added under the category. A subcategory's fields
+          override its parent's.
+        </p>
+      </div>
+      <div class="card-body">
+        <div *ngIf="!customFieldRows.length" class="text-center text-muted py-4">
+          No category defines custom fields yet. Open a subcategory in the Add Category tab to add some.
+        </div>
+
+        <div class="table-responsive" *ngIf="customFieldRows.length">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Level</th>
+                <th>Parent</th>
+                <th>Fields</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of customFieldRows">
+                <td class="fw-semibold">{{ row.category.Name }}</td>
+                <td>
+                  <span class="badge" [class.bg-primary]="!row.isSubcategory" [class.bg-info]="row.isSubcategory">
+                    {{ row.isSubcategory ? 'Subcategory' : 'Parent' }}
+                  </span>
+                </td>
+                <td>{{ row.parent?.Name || '-' }}</td>
+                <td>
+                  <span *ngFor="let field of parseCustomFields(row.category)" class="badge field-badge me-1 mb-1">
+                    {{ field.key }}
+                    <span class="field-type">{{ field.type }}</span>
+                    <span *ngIf="field.required" class="field-required">*</span>
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-secondary" type="button" (click)="editInFormTab(row.category)">Edit fields</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------------------------------------------------- Deleted Categories -->
+  <div *ngIf="activeTab === 'deleted'">
+    <div class="card">
+      <div class="card-header mt-3">
+        <h5 class="mb-1">Deleted Categories</h5>
+        <p class="text-muted mb-0">Soft-deleted categories. Restore one to bring it back into the category tree.</p>
+      </div>
+      <div class="card-body">
+        <div *ngIf="!deletedCategories.length" class="text-center text-muted py-4">No deleted categories.</div>
+
+        <div class="table-responsive" *ngIf="deletedCategories.length">
+          <table class="table table-hover align-middle">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Level</th>
+                <th>Parent</th>
+                <th>Tag</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let category of deletedCategories; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td class="fw-semibold">{{ category.Name }}</td>
+                <td>
+                  <span class="badge" [class.bg-primary]="!category.ParentId" [class.bg-info]="category.ParentId">
+                    {{ category.ParentId ? 'Subcategory' : 'Parent' }}
+                  </span>
+                </td>
+                <td>{{ getParentName(category) }}</td>
+                <td>{{ category.SubcategoryTagName || '-' }}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-success" type="button"
+                    (click)="restoreCategory(category.DetailedCategoryId!)">Restore</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

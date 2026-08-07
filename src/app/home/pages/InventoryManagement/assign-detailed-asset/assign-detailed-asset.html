@@ -1,22 +1,54 @@
 <div class="card">
-  <div class="card-header d-flex justify-content-between align-items-center">
-    <div class="d-flex align-items-center">
-      <h5 class="mb-0">Assign Detailed Asset</h5>
-      <div class="ms-4">
-        <input class="form-control form-control-sm" placeholder="Search assets" [(ngModel)]="search" />
+  <div class="card-header">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
+      <div>
+        <h5 class="mb-1">Assign Detailed Asset</h5>
+        <p class="text-muted mb-0">Assign an available asset to an employee.</p>
       </div>
-      <div class="ms-3">
-        <button type="button" class="btn btn-sm btn-outline-secondary" (click)="toggleAvailabilityView()">
-          {{ showAvailableOnly ? 'Show All' : 'Show Available' }}
-        </button>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="count-badge">{{ filteredAssets.length }} asset(s)</span>
+        <button type="button" class="btn btn-sm btn-outline-primary" (click)="downloadAssetsPdf()"
+          [disabled]="!filteredAssets.length">Download PDF</button>
       </div>
     </div>
-    <div class="d-flex gap-2 align-items-center">
-      <select class="form-select form-select-sm" [(ngModel)]="pageSize">
-        <option [ngValue]="5">5</option>
-        <option [ngValue]="10">10</option>
-        <option [ngValue]="25">25</option>
-      </select>
+
+    <div class="filter-toolbar mt-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-8 col-lg-5">
+          <label class="filter-label" for="assignSearch">Search</label>
+          <div class="input-group input-group-sm filter-search">
+            <span class="input-group-text"><i class="feather icon-search"></i></span>
+            <input id="assignSearch" class="form-control" placeholder="Asset tag, brand name or make/model"
+              [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+            <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+              (click)="clearSearch()"><i class="feather icon-x"></i></button>
+          </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="filter-label" for="assignAvailability">Availability</label>
+          <select id="assignAvailability" class="form-select form-select-sm" [(ngModel)]="showAvailableOnly"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="true">Available only</option>
+            <option [ngValue]="false">All assets</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-sm-3 col-lg-2">
+          <label class="filter-label" for="assignPageSize">Show</label>
+          <select id="assignPageSize" class="form-select form-select-sm" [(ngModel)]="pageSize"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="5">5</option>
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-sm-3 col-lg-2 d-grid">
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+            [disabled]="!hasActiveFilters">Reset</button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="card-body">
@@ -26,7 +58,7 @@
           <tr>
             <th>#</th>
             <th>Asset Tag</th>
-            <th>Name</th>
+            <th>Brand Name</th>
             <th>Make/Model</th>
             <th>Status</th>
             <th class="text-end">Actions</th>

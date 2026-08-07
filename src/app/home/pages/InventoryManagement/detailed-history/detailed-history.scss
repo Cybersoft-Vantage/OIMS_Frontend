@@ -1,4 +1,5 @@
-/* Styles for detailed asset history page */
+/* Styles for detailed asset history page.
+   The filter toolbar itself comes from the shared `scss/_inventory-filters.scss`. */
 .card-body {
   max-height: calc(100vh - 300px);
   overflow: auto;

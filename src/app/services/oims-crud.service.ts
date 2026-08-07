@@ -119,6 +119,8 @@ export interface DetailedCategory {
   SubcategoryTagName?: string | null;
   Description?: string | null;
   CustomSchema?: string | null;
+  /** 1 when the category is hidden: it keeps its assets but is filtered out of asset listings and pickers. */
+  IsHidden?: number | null;
   children?: DetailedCategory[];
 }
 
@@ -366,6 +368,14 @@ export class OimsCrudService {
 
   restoreDetailedCategory(id: number) {
     return this.http.post<DetailedCategory>(`${this.apiUrl}/detailed/categories/${id}/restore`, {});
+  }
+
+  /** Hide or show a category. Cascades to its subcategories unless `cascade` is false. */
+  setDetailedCategoryVisibility(id: number, isHidden: boolean, cascade = true) {
+    return this.http.put<DetailedCategory>(`${this.apiUrl}/detailed/categories/${id}/visibility`, {
+      IsHidden: isHidden,
+      Cascade: cascade
+    });
   }
 
   getDeletedDetailedAssets() {

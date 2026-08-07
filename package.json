@@ -36,6 +36,8 @@
     "exceljs": "^4.4.0",
     "hammerjs": "2.0.8",
     "jquery": "3.7.1",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.8",
     "lodash-es": "4.17.21",
     "mousetrap": "1.6.5",
     "ng-apexcharts": "2.0.4",

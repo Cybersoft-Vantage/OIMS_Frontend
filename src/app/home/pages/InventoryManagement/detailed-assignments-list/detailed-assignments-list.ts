@@ -82,9 +82,19 @@ export class DetailedAssignmentsList implements OnInit {
       ReturnedDate: new Date().toISOString().split('T')[0],
       Remarks: '',
       ReturnedBy: this.auth.fullName || this.auth.username || '',
-      Status: asset?.Status || 'Available'
+      Status: this.defaultReturnStatus(asset?.Status)
     };
     this.modalService.open(this.returnModalTemplate, { centered: true });
+  }
+
+  /**
+   * An asset out on assignment carries the "Assigned" status, which is not a condition
+   * you can return it in - default those (and any unknown status) to "Available".
+   */
+  private defaultReturnStatus(currentStatus?: string | null): string {
+    const normalized = (currentStatus || '').trim();
+    const match = this.statusOptions.find((option) => option.toLowerCase() === normalized.toLowerCase());
+    return match || 'Available';
   }
 
   submitReturn(form: NgForm, modal: NgbModalRef) {
@@ -157,8 +167,23 @@ export class DetailedAssignmentsList implements OnInit {
   nextPage() { this.page = Math.min(this.totalPages(), this.page + 1); }
   gotoPage(n: number) { this.page = n; }
 
-  toggleReturnView(): void {
-    this.onlyNotReturned = !this.onlyNotReturned;
+  onFilterChange(): void {
+    this.page = 1;
+  }
+
+  clearSearch(): void {
+    this.search = '';
+    this.onFilterChange();
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!this.search?.trim() || this.employeeFilter != null || !this.onlyNotReturned;
+  }
+
+  resetFilters(): void {
+    this.search = '';
+    this.employeeFilter = undefined;
+    this.onlyNotReturned = true;
     this.page = 1;
   }
 }

@@ -11,8 +11,20 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { DetailedAssetDetail } from "../detailed-asset-detail/detailed-asset-detail";
 import { AssignmentsDetailedList } from "../assignments-detailed-list/assignments-detailed-list";
 import { InventoryImport } from '../bulk-import/import';
+import { DETAILED_ASSET_IMPORT_COLUMNS } from '../bulk-import/import-columns';
 import { ReturnAssignmentsDetailedList } from '../return-assignments-detailed-list/return-assignments-detailed-list';
-import * as ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import {
+  PDF_BRAND_FILL,
+  PDF_BRAND_TEXT,
+  PDF_HEADER_FILL,
+  PDF_HEADER_TEXT,
+  PDF_SECTION_FILL,
+  PDF_SUBSECTION_FILL,
+  PDF_ZEBRA_FILL,
+  pdfText
+} from 'src/app/shared/pdf-export.util';
 
 @Component({
   selector: 'app-add-detailed-asset',
@@ -65,6 +77,9 @@ export class AddDetailedAsset implements OnInit {
 
   get filteredAssets(): DetailedAsset[] {
     return this.assets.filter((asset) => {
+      if (this.isAssetCategoryHidden(asset)) {
+        return false;
+      }
       if (this.selectedFilterCategoryId != null && asset.DetailedCategoryId !== this.selectedFilterCategoryId) {
         return false;
       }
@@ -73,6 +88,43 @@ export class AddDetailedAsset implements OnInit {
       }
       return true;
     });
+  }
+
+  private isCategoryHidden(category?: DetailedCategory | null): boolean {
+    // The API returns 0/1; Number() also tolerates a boolean or numeric string.
+    return !!category && Number(category.IsHidden) === 1;
+  }
+
+  /**
+   * True when the asset's parent category, or the subcategory it belongs to, has been
+   * hidden from the category manager. Hidden assets stay in the database and keep their
+   * assignment history - they are just filtered out of the listings and pickers here.
+   */
+  isAssetCategoryHidden(asset: DetailedAsset): boolean {
+    const parent = this.categories.find((category) => category.DetailedCategoryId === asset.DetailedCategoryId);
+    if (!parent) {
+      return false;
+    }
+    if (this.isCategoryHidden(parent)) {
+      return true;
+    }
+    const subCategoryName = (asset.SubCategory || '').trim().toLowerCase();
+    if (!subCategoryName) {
+      return false;
+    }
+    const child = (parent.children ?? []).find(
+      (item) => (item.Name || '').toString().trim().toLowerCase() === subCategoryName
+    );
+    return this.isCategoryHidden(child);
+  }
+
+  /** Parent categories a new asset may be filed under - hidden ones are excluded. */
+  get visibleTopCategories(): DetailedCategory[] {
+    return this.topCategories.filter((category) => !this.isCategoryHidden(category));
+  }
+
+  private visibleChildren(category?: DetailedCategory | null): DetailedCategory[] {
+    return (category?.children ?? []).filter((child) => !this.isCategoryHidden(child));
   }
 
   ngOnInit(): void {
@@ -162,20 +214,9 @@ export class AddDetailedAsset implements OnInit {
   }
 
   downloadImportTemplate(): void {
-    const headers = [
-      'AssetTag',
-      'Name',
-      'DetailedCategoryId',
-      'SubCategory',
-      'Model',
-      'SerialNo',
-      'Specifications',
-      'Status',
-      'PurchaseCost',
-      'PurchaseDate',
-      'WarrantyEnd',
-      'CustomValues'
-    ];
+    // Single source of truth, shared with the import screen's column check so the
+    // template and the validation can never drift apart.
+    const headers = DETAILED_ASSET_IMPORT_COLUMNS.map((column) => column.header);
     const csv = headers.join(',') + '\r\n';
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -188,6 +229,16 @@ export class AddDetailedAsset implements OnInit {
     URL.revokeObjectURL(url);
   }
 
+  get hasAssetFilters(): boolean {
+    return this.selectedFilterCategoryId != null || !!this.selectedFilterSubCategory.trim();
+  }
+
+  resetAssetFilters(): void {
+    this.selectedFilterCategoryId = null;
+    this.selectedFilterSubCategory = '';
+    this.assetFilterSubCategories = [];
+  }
+
   onAssetFilterCategoryChange(categoryId: number | null): void {
     this.selectedFilterCategoryId = categoryId;
     this.selectedFilterSubCategory = '';
@@ -196,7 +247,7 @@ export class AddDetailedAsset implements OnInit {
       return;
     }
     const category = this.categories.find((item) => item.DetailedCategoryId === categoryId);
-    this.assetFilterSubCategories = category?.children ?? [];
+    this.assetFilterSubCategories = this.visibleChildren(category);
   }
 
   // Asset Tag modal helpers
@@ -222,11 +273,12 @@ export class AddDetailedAsset implements OnInit {
       return;
     }
     const category = this.categories.find((item) => item.DetailedCategoryId === categoryId);
-    this.assetTagFilterSubCategories = category?.children ?? [];
+    this.assetTagFilterSubCategories = this.visibleChildren(category);
   }
 
   get assetTagModalAssets(): DetailedAsset[] {
     return this.assets.filter((asset) => {
+      if (this.isAssetCategoryHidden(asset)) return false;
       if (this.assetTagFilterCategoryId != null && asset.DetailedCategoryId !== this.assetTagFilterCategoryId) return false;
       if (this.assetTagFilterSubCategory && (asset.SubCategory || '').trim() !== this.assetTagFilterSubCategory.trim()) return false;
       return true;
@@ -268,187 +320,161 @@ export class AddDetailedAsset implements OnInit {
     this.allAssetTagSelectedToggle(checked);
   }
 
-  // Export selected asset tags to XLSX
-  async downloadAssetTagsXlsx(): Promise<void> {
+  // Export selected asset tags to PDF
+  downloadAssetTagsPdf(): void {
     const selectedIds = Object.keys(this.assetTagSelected).filter((k) => this.assetTagSelected[Number(k)]).map((k) => Number(k));
     const selectedAssets = this.assets.filter((a) => selectedIds.includes(Number(a.DetailedAssetId ?? -1)));
     if (!selectedAssets.length) {
       this.notify.info('No assets selected');
       return;
     }
-    
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Inventory Tags');
-    const headerRow = worksheet.getRow(3);
 
-    worksheet.columns = [{ width: 30 }];
-    worksheet.mergeCells('A1:A1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'Inventory Tags';
-    titleCell.font = { bold: true, size: 16 };
-    titleCell.alignment = { horizontal: 'center' };
-    // apply a simple theme-aware header fill so exported file is readable in light/dark modes
-    try {
-      const theme = document.body?.getAttribute('data-theme') || document.documentElement?.getAttribute('data-theme') || 'light';
-      const isDark = theme.toLowerCase() === 'dark';
-      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isDark ? 'FF2B2B2B' : 'FFDCE6F1' } };
-      headerRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isDark ? 'FF1F1F1F' : 'FFD9E2F3' } };
-      headerRow.getCell(1).font = { bold: true, color: { argb: isDark ? 'FFFFFFFF' : 'FF000000' } };
-    } catch {
-      // ignore if DOM not available
-    }
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const startY = this.drawPdfTitle(doc, 'Inventory Tags', `${selectedAssets.length} tag(s) · Generated ${this.formatExportDate(new Date().toISOString())}`);
 
-    // Header
-    headerRow.getCell(1).value = 'Asset Tag';
-    headerRow.getCell(1).font = { bold: true };
-    headerRow.height = 20;
+    autoTable(doc, {
+      startY,
+      head: [['#', 'Asset Tag']],
+      body: selectedAssets.map((asset, index) => [String(index + 1), pdfText(asset.AssetTag || '-')]),
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: PDF_HEADER_FILL, textColor: PDF_HEADER_TEXT, fontStyle: 'bold', halign: 'center' },
+      alternateRowStyles: { fillColor: PDF_ZEBRA_FILL },
+      columnStyles: { 0: { cellWidth: 40, halign: 'center' } },
+      margin: { left: 28, right: 28 }
+    });
 
-    let rowIndex = 4;
-    for (const asset of selectedAssets) {
-      const row = worksheet.getRow(rowIndex);
-      row.getCell(1).value = asset.AssetTag || '';
-      rowIndex += 1;
-    }
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Inventory_Tags.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    this.addPdfPageNumbers(doc);
+    doc.save('Inventory_Tags.pdf');
     this.closeAssetTagModal();
   }
 
-  private getAssetMacAddress(asset: DetailedAsset): string {
-    const assetWithMac = asset as DetailedAsset & { MacAddress?: string | null };
-    if (assetWithMac.MacAddress) {
-      return String(assetWithMac.MacAddress);
-    }
-    if (!asset.CustomValues) {
-      return '—';
-    }
-    try {
-      const parsed = typeof asset.CustomValues === 'string' ? JSON.parse(asset.CustomValues) : asset.CustomValues;
-      if (parsed && typeof parsed === 'object') {
-        const keys = Object.keys(parsed);
-        const macKey = keys.find((key) => key.toLowerCase().replace(/\s|_/g, '').includes('macaddress'));
-        if (macKey && parsed[macKey] != null && String(parsed[macKey]).trim() !== '') {
-          return String(parsed[macKey]);
-        }
-      }
-    } catch {
-      return '—';
-    }
-    return '—';
-  }
-
   private formatExportDate(value?: string | null): string {
-    if (!value) return '—';
+    if (!value) return '-';
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return String(value);
     return date.toLocaleDateString('en-CA');
   }
 
-  private parseCustomValueEntries(raw?: string | null): string[] {
+  /** Custom values as field/value pairs, for the nested tables in the stock PDF. */
+  private parseCustomValuePairs(raw?: string | null): Array<{ key: string; value: string }> {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        return Object.entries(parsed).map(([key, value]) => `${key}: ${value ?? ''}`);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return Object.entries(parsed)
+          .filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '')
+          .map(([key, value]) => ({ key, value: String(value) }));
       }
       return [];
     } catch {
-      return [String(raw)];
+      // Not JSON - surface the raw text so nothing is silently dropped.
+      return [{ key: 'Custom Values', value: String(raw) }];
     }
   }
 
-  private applyThinBorder(row: ExcelJS.Row, length: number): void {
-    for (let i = 1; i <= length; i += 1) {
-      row.getCell(i).border = {
-        top: { style: 'thin' },
-        left: { style: 'thin' },
-        bottom: { style: 'thin' },
-        right: { style: 'thin' }
-      };
-    }
-  }
-
-  private applySectionFill(row: ExcelJS.Row, length: number, fill: string): void {
-    for (let i = 1; i <= length; i += 1) {
-      row.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: fill } };
-    }
-  }
-
-  private applyStatusStyle(statusCell: ExcelJS.Cell, status?: string | null): void {
+  private getStatusPdfStyle(status?: string | null): { fillColor: [number, number, number]; textColor: [number, number, number] } | null {
     const normalized = (status || '').toLowerCase().trim();
     if (normalized === 'available') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF00' } };
-      statusCell.font = { color: { argb: 'FF000000' } };
-      return;
+      return { fillColor: [255, 255, 0], textColor: [0, 0, 0] };
+    }
+    if (normalized === 'assigned') {
+      return { fillColor: [11, 61, 145], textColor: [255, 255, 255] };
     }
     if (normalized.includes('damag')) {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
-      statusCell.font = { color: { argb: 'FFFFFFFF' } };
-      return;
+      return { fillColor: [255, 0, 0], textColor: [255, 255, 255] };
     }
     if (normalized.includes('sold')) {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF000000' } };
-      statusCell.font = { color: { argb: 'FFFFFFFF' } };
-      return;
+      return { fillColor: [0, 0, 0], textColor: [255, 255, 255] };
     }
     if (normalized === 'new') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B3D91' } };
-      statusCell.font = { color: { argb: 'FFFFFFFF' } };
-      return;
+      return { fillColor: [11, 61, 145], textColor: [255, 255, 255] };
     }
     if (normalized === 'good') {
-      statusCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF00B050' } };
-      statusCell.font = { color: { argb: 'FFFFFFFF' } };
+      return { fillColor: [0, 176, 80], textColor: [255, 255, 255] };
     }
+    return null;
   }
 
-  async downloadExistingAssetsXlsx(): Promise<void> {
+  /** Draws the blue title band used by every inventory PDF and returns the Y position to continue from. */
+  private drawPdfTitle(doc: jsPDF, title: string, subtitle?: string): number {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 28;
+    doc.setFillColor(PDF_BRAND_FILL[0], PDF_BRAND_FILL[1], PDF_BRAND_FILL[2]);
+    doc.rect(margin, 24, pageWidth - margin * 2, 32, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(PDF_BRAND_TEXT[0], PDF_BRAND_TEXT[1], PDF_BRAND_TEXT[2]);
+    doc.text(pdfText(title), pageWidth / 2, 45, { align: 'center' });
+
+    let nextY = 70;
+    if (subtitle) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text(pdfText(subtitle), margin, nextY);
+      nextY += 14;
+    }
+    doc.setTextColor(0, 0, 0);
+    return nextY;
+  }
+
+  private addPdfPageNumbers(doc: jsPDF): void {
+    const pageCount = doc.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(130, 130, 130);
+      doc.text(`Page ${page} of ${pageCount}`, pageWidth - 28, pageHeight - 16, { align: 'right' });
+    }
+    doc.setTextColor(0, 0, 0);
+  }
+
+  private lastPdfY(doc: jsPDF, fallback: number): number {
+    const table = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable;
+    return table?.finalY ?? fallback;
+  }
+
+  /** Writes a section heading, breaking to a new page when there is not enough room left. */
+  private drawPdfSectionHeading(doc: jsPDF, text: string, y: number, options: { emphasis: boolean }): number {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 28;
+    let top = y;
+    if (top + 60 > pageHeight - 40) {
+      doc.addPage();
+      top = 40;
+    }
+
+    const height = options.emphasis ? 20 : 18;
+    const fill = options.emphasis ? PDF_SECTION_FILL : PDF_SUBSECTION_FILL;
+    doc.setFillColor(fill[0], fill[1], fill[2]);
+    doc.rect(margin, top, pageWidth - margin * 2, height, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(options.emphasis ? 10.5 : 9.5);
+    const textColor: [number, number, number] = options.emphasis ? [22, 53, 92] : [63, 63, 63];
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.text(pdfText(text), margin + 8, top + height - 6);
+    doc.setTextColor(0, 0, 0);
+    return top + height;
+  }
+
+  downloadExistingAssetsPdf(): void {
     const exportAssets = this.filteredAssets;
     if (!exportAssets.length) {
       this.notify.info('No detailed assets available to export.');
       return;
     }
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Inventory Stock');
-
-    worksheet.columns = [
-      { width: 20 },
-      { width: 24 },
-      { width: 22 },
-      { width: 20 },
-      { width: 14 },
-      { width: 16 },
-      { width: 16 },
-      { width: 12 },
-      { width: 28 },
-      { width: 28 },
-      { width: 28 },
-      { width: 28 }
-    ];
-
-    worksheet.mergeCells('A1:L1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'Inventory Stock -CSV';
-    titleCell.font = { bold: true, size: 20, color: { argb: 'FFFFCF3F' }, underline: true };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B4EB3' } };
-    titleCell.border = {
-      top: { style: 'medium' },
-      left: { style: 'medium' },
-      bottom: { style: 'medium' },
-      right: { style: 'medium' }
-    };
-    worksheet.getRow(1).height = 30;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    let cursorY = this.drawPdfTitle(
+      doc,
+      'Inventory Stock',
+      `${exportAssets.length} asset(s) · Generated ${this.formatExportDate(new Date().toISOString())}`
+    );
 
     const parentGroups = new Map<string, Map<string, DetailedAsset[]>>();
     for (const asset of exportAssets) {
@@ -464,102 +490,119 @@ export class AddDetailedAsset implements OnInit {
       subMap.get(subCategory)!.push(asset);
     }
 
-    let rowIndex = 3;
     for (const [parentCategory, subGroups] of Array.from(parentGroups.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      worksheet.mergeCells(`A${rowIndex}:L${rowIndex}`);
-      const parentCell = worksheet.getCell(`A${rowIndex}`);
-      parentCell.value = `Category Name: ${parentCategory}`;
-      parentCell.font = { bold: true, size: 13, color: { argb: 'FF16355C' } };
-      parentCell.alignment = { horizontal: 'left', vertical: 'middle' };
-      parentCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCE6F1' } };
-      rowIndex += 1;
+      cursorY = this.drawPdfSectionHeading(doc, `Category Name: ${parentCategory}`, cursorY + 8, { emphasis: true });
 
       for (const [subCategory, subAssets] of Array.from(subGroups.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-        worksheet.mergeCells(`A${rowIndex}:L${rowIndex}`);
-        const subCell = worksheet.getCell(`A${rowIndex}`);
-        subCell.value = `Subcategory: ${subCategory}`;
-        subCell.font = { bold: true, size: 12, color: { argb: 'FF3F3F3F' } };
-        subCell.alignment = { horizontal: 'left', vertical: 'middle' };
-        subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F6FA' } };
-        rowIndex += 1;
+        cursorY = this.drawPdfSectionHeading(doc, `Subcategory: ${subCategory}`, cursorY + 4, { emphasis: false });
 
-        const customEntries = subAssets.map((asset) => this.parseCustomValueEntries(asset.CustomValues));
-        const maxCustomCount = customEntries.reduce((max, values) => Math.max(max, values.length), 0);
-
+        // Fixed column set - custom values are rendered as their own nested table per
+        // asset below, so a subcategory with extra fields never widens the main table.
         const headers = [
           'Asset ID',
           'Asset Name',
-          'Macaddress',
+          'Make / Model',
           'Serial Number',
           'Purchase Cost',
           'Purchase Date',
           'Warranty End',
           'Status'
         ];
-        for (let i = 1; i <= maxCustomCount; i += 1) {
-          headers.push(`Custom Value ${i}`);
-        }
-
-        const headerRow = worksheet.getRow(rowIndex);
-        headerRow.values = headers;
-        for (let c = 1; c <= headers.length; c += 1) {
-          const cell = headerRow.getCell(c);
-          cell.font = { bold: true, color: { argb: 'FF1F1F1F' } };
-          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E2F3' } };
-        }
-        this.applyThinBorder(headerRow, headers.length);
-        headerRow.height = 22;
-        rowIndex += 1;
+        const statusColumnIndex = 7;
 
         const sortedAssets = [...subAssets].sort((a, b) => String(a.AssetTag || '').localeCompare(String(b.AssetTag || '')));
-        for (const asset of sortedAssets) {
-          const values = this.parseCustomValueEntries(asset.CustomValues);
-          const rowData: any[] = [
-            asset.AssetTag || '—',
-            asset.Name || '—',
-            this.getAssetMacAddress(asset),
-            asset.SerialNo || '—',
-            asset.PurchaseCost == null ? '—' : asset.PurchaseCost,
+        const body = sortedAssets.map((asset) =>
+          [
+            asset.AssetTag || '-',
+            asset.Name || '-',
+            asset.MakeModel || '-',
+            asset.SerialNo || '-',
+            asset.PurchaseCost == null ? '-' : String(asset.PurchaseCost),
             this.formatExportDate(asset.PurchaseDate),
             this.formatExportDate(asset.WarrantyEnd),
-            asset.Status || '—'
-          ];
-          for (let i = 0; i < maxCustomCount; i += 1) {
-            rowData.push(values[i] ?? '');
-          }
+            asset.Status || '-'
+          ].map((cell) => pdfText(cell))
+        );
 
-          const dataRow = worksheet.getRow(rowIndex);
-          dataRow.values = rowData;
-          dataRow.alignment = { vertical: 'top', wrapText: true };
-          dataRow.getCell(5).alignment = { horizontal: 'right' };
-          this.applyStatusStyle(dataRow.getCell(8), asset.Status);
-          this.applyThinBorder(dataRow, headers.length);
-          if (rowIndex % 2 === 0) {
-            this.applySectionFill(dataRow, headers.length, 'FFFAFAFA');
-            this.applyStatusStyle(dataRow.getCell(8), asset.Status);
+        autoTable(doc, {
+          startY: cursorY,
+          head: [headers],
+          body,
+          theme: 'grid',
+          styles: { font: 'helvetica', fontSize: 8, cellPadding: 4, overflow: 'linebreak', valign: 'top' },
+          headStyles: { fillColor: PDF_HEADER_FILL, textColor: PDF_HEADER_TEXT, fontStyle: 'bold', halign: 'center' },
+          alternateRowStyles: { fillColor: PDF_ZEBRA_FILL },
+          columnStyles: {
+            4: { halign: 'right' },
+            [statusColumnIndex]: { halign: 'center' }
+          },
+          margin: { left: 28, right: 28 },
+          didParseCell: (data) => {
+            if (data.section !== 'body' || data.column.index !== statusColumnIndex) {
+              return;
+            }
+            const style = this.getStatusPdfStyle(sortedAssets[data.row.index]?.Status);
+            if (style) {
+              data.cell.styles.fillColor = style.fillColor;
+              data.cell.styles.textColor = style.textColor;
+            }
           }
-          rowIndex += 1;
+        });
+
+        cursorY = this.lastPdfY(doc, cursorY) + 8;
+
+        // Nested detail: one indented Field/Value table per asset that carries custom
+        // values, so subcategory-specific fields are reported without touching the
+        // main table's layout.
+        for (const asset of sortedAssets) {
+          const pairs = this.parseCustomValuePairs(asset.CustomValues);
+          if (!pairs.length) {
+            continue;
+          }
+          cursorY = this.drawCustomValuesTable(doc, asset, pairs, cursorY);
         }
 
-        rowIndex += 1;
+        cursorY += 6;
       }
-
-      rowIndex += 1;
     }
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    this.addPdfPageNumbers(doc);
+    doc.save('Inventory_Stock.pdf');
+  }
+
+  /** Indented Field/Value sub-table for one asset's custom values. Returns the next Y. */
+  private drawCustomValuesTable(
+    doc: jsPDF,
+    asset: DetailedAsset,
+    pairs: Array<{ key: string; value: string }>,
+    startY: number
+  ): number {
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let top = startY;
+    if (top + 56 > pageHeight - 40) {
+      doc.addPage();
+      top = 40;
+    }
+
+    const label = `Custom Values - ${asset.AssetTag || asset.Name || 'Asset'}`;
+    autoTable(doc, {
+      startY: top,
+      head: [[{ content: pdfText(label), colSpan: 2, styles: { halign: 'left' } }]],
+      body: pairs.map((pair) => [pdfText(pair.key), pdfText(pair.value)]),
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 7.5, cellPadding: 3, overflow: 'linebreak' },
+      headStyles: { fillColor: PDF_SUBSECTION_FILL, textColor: [63, 63, 63], fontStyle: 'bold' },
+      bodyStyles: { fillColor: [255, 255, 255] },
+      columnStyles: {
+        0: { cellWidth: 150, fontStyle: 'bold', textColor: [70, 70, 70] },
+        1: { cellWidth: 260 }
+      },
+      // Indented under the main table so the nesting reads visually.
+      margin: { left: 68, right: 28 },
+      tableWidth: 410
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', 'Inventory_Stock_CSV.xlsx');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+
+    return this.lastPdfY(doc, top) + 8;
   }
 
   deleteAsset(id?: number | null) {
@@ -633,11 +676,11 @@ export class AddDetailedAsset implements OnInit {
     const selectedCategory = (this.subCategories || []).find(
       (category) => (category.Name || '').toString().trim() === selectedSubCategory
     );
-    const rawTag = (selectedCategory?.SubcategoryTagName || '').toString().trim().toUpperCase();
-    if (rawTag.length !== 3) {
-      this.model.AssetTag = '';
-      return;
-    }
+    const rawTag = (selectedCategory?.SubcategoryTagName || '').toString().toUpperCase();
+    this.model.AssetTag = '';
+    // if (rawTag.length !== 3) {
+    //   return;
+    // }
 
     const prefix = rawTag;
     const existingTags = (this.assets || [])
@@ -666,7 +709,7 @@ export class AddDetailedAsset implements OnInit {
 
     const parentCategory = this.categories.find((c) => c.DetailedCategoryId === id);
     if (parentCategory) {
-      this.subCategories = parentCategory.children ?? [];
+      this.subCategories = this.visibleChildren(parentCategory);
       if (parentCategory.CustomSchema) {
         try {
           this.parentCustomFields = JSON.parse(parentCategory.CustomSchema);

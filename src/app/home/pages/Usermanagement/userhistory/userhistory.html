@@ -1,39 +1,68 @@
 <div class="card">
-    <div class="card">
-    <div class="page-header">
-        <div class="page-block">
-            <div class="row align-items-center">
-                <div class="col-md-12">
-                    <h5 class="page-header-title mb-0">User Asset History</h5>
-                    <nav aria-label="breadcrumb" class="mt-2">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a routerLink="/">OIMS Management</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">User Asset History</li>
-                        </ol>
-                    </nav>
-                </div>
-            </div>
+  <div class="page-header">
+    <div class="page-block">
+      <div class="row align-items-center">
+        <div class="col-md-12">
+          <h5 class="page-header-title mb-0">User Asset History</h5>
+          <nav aria-label="breadcrumb" class="mt-2">
+            <ol class="breadcrumb mb-0">
+              <li class="breadcrumb-item"><a routerLink="/">OIMS Management</a></li>
+              <li class="breadcrumb-item active" aria-current="page">User Asset History</li>
+            </ol>
+          </nav>
         </div>
+      </div>
     </div>
+  </div>
+
   <div class="card-header">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
       <div>
-        <h5 class="mb-0">Detailed Asset History</h5>
+        <h5 class="mb-1">Detailed Asset History</h5>
         <p class="text-muted mb-0">View lifecycle events for detailed assets.</p>
       </div>
-      <div class="d-flex flex-wrap gap-2 align-items-center">
-        <select class="form-select form-select-sm" [(ngModel)]="selectedAssetId" (ngModelChange)="onAssetChange()">
-          <option [ngValue]="null">All assets</option>
-          <option *ngFor="let a of assets" [ngValue]="a.DetailedAssetId">{{ a.AssetTag || a.Name }}</option>
-        </select>
-        <input class="form-control form-control-sm" placeholder="Search history" [(ngModel)]="search" />
-        <select class="form-select form-select-sm" [(ngModel)]="pageSize">
-          <option [ngValue]="10">10</option>
-          <option [ngValue]="25">25</option>
-          <option [ngValue]="50">50</option>
-        </select>
+      <span class="count-badge">{{ filteredHistories.length }} record(s)</span>
+    </div>
+
+    <div class="filter-toolbar mt-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <label class="filter-label" for="userHistoryAsset">Asset</label>
+          <select id="userHistoryAsset" class="form-select form-select-sm" [(ngModel)]="selectedAssetId"
+            (ngModelChange)="onAssetChange()">
+            <option [ngValue]="null">All assets</option>
+            <option *ngFor="let a of assets" [ngValue]="a.DetailedAssetId">{{ a.AssetTag || a.Name }}</option>
+          </select>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-5">
+          <label class="filter-label" for="userHistorySearch">Search</label>
+          <div class="input-group input-group-sm filter-search">
+            <span class="input-group-text"><i class="feather icon-search"></i></span>
+            <input id="userHistorySearch" class="form-control" placeholder="Action, notes, tag or date"
+              [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+            <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+              (click)="clearSearch()"><i class="feather icon-x"></i></button>
+          </div>
+        </div>
+
+        <div class="col-6 col-sm-6 col-lg-2">
+          <label class="filter-label" for="userHistoryPageSize">Show</label>
+          <select id="userHistoryPageSize" class="form-select form-select-sm" [(ngModel)]="pageSize"
+            (ngModelChange)="onFilterChange()">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="25">25</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </div>
+
+        <div class="col-6 col-sm-6 col-lg-1 d-grid">
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+            [disabled]="!hasActiveFilters">Reset</button>
+        </div>
       </div>
     </div>
+  </div>
 
   <div class="card-body table-scroll-x">
     <table class="table table-hover align-middle table-nowrap">

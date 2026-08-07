@@ -86,6 +86,25 @@ export class Adduser implements OnInit {
     this.page = n;
   }
 
+  onFilterChange(): void {
+    this.page = 1;
+  }
+
+  clearSearch(): void {
+    this.search = '';
+    this.onFilterChange();
+  }
+
+  get hasActiveFilters(): boolean {
+    return !!this.search?.trim() || (!!this.roleFilter && this.roleFilter !== 'all');
+  }
+
+  resetFilters(): void {
+    this.search = '';
+    this.roleFilter = 'all';
+    this.page = 1;
+  }
+
   constructor(
     private readonly crudService: OimsCrudService,
     private readonly modalService: NgbModal,
