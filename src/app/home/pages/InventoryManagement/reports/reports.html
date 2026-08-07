@@ -1,45 +1,66 @@
 <div class="card">
   <div class="card-header">
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mt-3">
       <div>
-        <h5 class="mb-0">Reports</h5>
+        <h5 class="mb-1">Reports</h5>
         <p class="text-muted mb-0">View detailed asset assignments and returns per employee.</p>
       </div>
-      <button class="btn btn-sm btn-outline-primary" type="button" (click)="downloadXlsx()" [disabled]="!filteredAssignments.length">Download XLSX</button>
+      <div class="d-flex align-items-center gap-2 flex-wrap">
+        <span class="count-badge">
+          {{ filteredAssignments.length }} {{ showAll ? 'assignment/return' : 'active assignment' }}(s)
+        </span>
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="downloadPdf()" [disabled]="!filteredAssignments.length">Download PDF</button>
+      </div>
+    </div>
+
+    <div class="filter-toolbar mt-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="filter-label" for="reportEmployeeFilter">Employee</label>
+          <select id="reportEmployeeFilter" class="form-select form-select-sm" [(ngModel)]="selectedEmployeeId" (ngModelChange)="onFilterChange()">
+            <option [ngValue]="null">All Employees</option>
+            <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="filter-label" for="reportCategoryFilter">Parent Category</label>
+          <select id="reportCategoryFilter" class="form-select form-select-sm" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryFilterChange($event)">
+            <option [ngValue]="null">All Categories</option>
+            <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+          <label class="filter-label" for="reportSubCategoryFilter">Subcategory</label>
+          <select id="reportSubCategoryFilter" class="form-select form-select-sm" [(ngModel)]="selectedSubCategory" (ngModelChange)="onFilterChange()" [disabled]="!selectedCategoryId">
+            <option value="">All Subcategories</option>
+            <option *ngFor="let category of reportSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
+          </select>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <label class="filter-label" for="reportSearch">Search</label>
+          <div class="input-group input-group-sm filter-search">
+            <span class="input-group-text"><i class="feather icon-search"></i></span>
+            <input id="reportSearch" class="form-control" placeholder="Asset, employee or date" [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
+            <button *ngIf="search" class="btn btn-outline-secondary" type="button" title="Clear search"
+              (click)="clearSearch()"><i class="feather icon-x"></i></button>
+          </div>
+        </div>
+        <div class="col-6 col-sm-6 col-lg-1">
+          <label class="filter-label" for="reportShowAll">Scope</label>
+          <div class="filter-switch form-check form-switch mb-0">
+            <input id="reportShowAll" class="form-check-input" type="checkbox" role="switch" [(ngModel)]="showAll" (ngModelChange)="onFilterChange()" />
+            <label class="form-check-label ms-2 small" for="reportShowAll">{{ showAll ? 'All' : 'Active' }}</label>
+          </div>
+        </div>
+        <div class="col-6 col-sm-6 col-lg-1 d-grid">
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="resetFilters()"
+            [disabled]="!hasActiveFilters">Reset</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="card-body">
-    <div class="row mb-3 g-2">
-      <div class="col-md-3">
-        <select class="form-select form-select-sm" [(ngModel)]="selectedEmployeeId" (ngModelChange)="onFilterChange()">
-          <option [ngValue]="null">All Employees</option>
-          <option *ngFor="let employee of employees" [ngValue]="employee.EmployeeId">{{ employee.FullName }}</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <select class="form-select form-select-sm" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryFilterChange($event)">
-          <option [ngValue]="null">All Parent Categories</option>
-          <option *ngFor="let category of topCategories" [ngValue]="category.DetailedCategoryId">{{ category.Name }}</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <select class="form-select form-select-sm" [(ngModel)]="selectedSubCategory" (ngModelChange)="onFilterChange()" [disabled]="!selectedCategoryId">
-          <option value="">All Subcategories</option>
-          <option *ngFor="let category of reportSubCategories" [ngValue]="category.Name">{{ category.Name }}</option>
-        </select>
-      </div>
-      <div class="col-md-3">
-        <input class="form-control form-control-sm" placeholder="Search assigned assets" [(ngModel)]="search" (ngModelChange)="onFilterChange()" />
-      </div>
-      <div class="col-12 text-end">
-        <label class="form-check form-switch d-inline-flex align-items-center me-3">
-          <input class="form-check-input" type="checkbox" [(ngModel)]="showAll" (ngModelChange)="onFilterChange()" />
-          <span class="form-check-label ms-2">Show All</span>
-        </label>
-        <span class="text-muted">Showing {{ filteredAssignments.length }} {{ showAll ? 'assignment/return' : 'active assignment' }}(s)</span>
-      </div>
-    </div>
 
     <div *ngIf="isLoading" class="text-center py-4">Loading current assignments...</div>
     <div *ngIf="!isLoading && !filteredAssignments.length" class="text-center py-4 text-muted">No records found for the selected filters.</div>

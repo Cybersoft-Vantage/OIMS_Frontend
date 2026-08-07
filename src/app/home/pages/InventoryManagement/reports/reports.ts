@@ -1,7 +1,12 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { DetailedAsset, DetailedCategory, EmployeeDetail, OimsCrudService } from 'src/app/services/oims-crud.service';
-import * as ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { PDF_BRAND_FILL, PDF_BRAND_TEXT, PDF_SECTION_FILL, pdfText } from 'src/app/shared/pdf-export.util';
+
+const PDF_HEADER_FILL: [number, number, number] = [242, 242, 242];
+const PDF_MARGIN = 28;
 
 @Component({
   selector: 'app-reports',
@@ -69,6 +74,31 @@ export class ReportsPage implements OnInit {
   }
 
   onFilterChange(): void {
+    this.page = 1;
+  }
+
+  clearSearch(): void {
+    this.search = '';
+    this.onFilterChange();
+  }
+
+  get hasActiveFilters(): boolean {
+    return (
+      this.selectedEmployeeId != null ||
+      this.selectedCategoryId != null ||
+      !!this.selectedSubCategory.trim() ||
+      !!this.search?.trim() ||
+      this.showAll
+    );
+  }
+
+  resetFilters(): void {
+    this.selectedEmployeeId = null;
+    this.selectedCategoryId = null;
+    this.selectedSubCategory = '';
+    this.reportSubCategories = [];
+    this.search = '';
+    this.showAll = false;
     this.page = 1;
   }
 
@@ -171,6 +201,7 @@ export class ReportsPage implements OnInit {
       const assetName = this.getAssetName(assignment.DetailedAssetId).toLowerCase();
       const assetTag = this.getAssetTag(assignment.DetailedAssetId).toLowerCase();
       const macAddress = this.getAssetMacAddress(assignment.DetailedAssetId).toLowerCase();
+      const makeModel = this.getAssetMakeModel(assignment.DetailedAssetId).toLowerCase();
       const serialNumber = this.getAssetSerialNumber(assignment.DetailedAssetId).toLowerCase();
       const status = this.getAssetStatus(assignment.DetailedAssetId).toLowerCase();
       const employeeName = this.getEmployeeName(assignment.EmployeeId).toLowerCase();
@@ -182,6 +213,7 @@ export class ReportsPage implements OnInit {
       return assetName.includes(q)
         || assetTag.includes(q)
         || macAddress.includes(q)
+        || makeModel.includes(q)
         || serialNumber.includes(q)
         || status.includes(q)
         || employeeName.includes(q)
@@ -252,6 +284,11 @@ export class ReportsPage implements OnInit {
     return asset?.SerialNo || '—';
   }
 
+  getAssetMakeModel(detailedAssetId?: number | null): string {
+    const asset = this.assets.find((item) => item.DetailedAssetId === detailedAssetId);
+    return asset?.MakeModel || '—';
+  }
+
   getAssetStatus(detailedAssetId?: number | null): string {
     const asset = this.assets.find((item) => item.DetailedAssetId === detailedAssetId);
     return asset?.Status || '—';
@@ -320,44 +357,89 @@ export class ReportsPage implements OnInit {
     return date.toLocaleDateString('en-CA');
   }
 
-  private getReportRowXlsxStyle(assignment: any): { background?: string; fontColor?: string } {
+  private getReportRowPdfStyle(assignment: any): { fillColor: [number, number, number]; textColor: [number, number, number] } | null {
     const status = this.getAssetStatus(assignment?.DetailedAssetId).toLowerCase();
     if (status.includes('sold')) {
-      return { background: 'FF0B3D91', fontColor: 'FFFFFFFF' };
+      return { fillColor: [11, 61, 145], textColor: [255, 255, 255] };
     }
     if (status.includes('damag')) {
-      return { background: 'FFFF3B30', fontColor: 'FFFFFFFF' };
+      return { fillColor: [255, 59, 48], textColor: [255, 255, 255] };
     }
     if (this.isReturned(assignment)) {
-      return { background: 'FFFFF59D', fontColor: 'FF000000' };
+      return { fillColor: [255, 245, 157], textColor: [0, 0, 0] };
     }
-    return {};
+    return null;
   }
 
-  async downloadXlsx(): Promise<void> {
+  /** Colour key for the row shading used in the report. Returns the box's bottom Y. */
+  private drawLegendBox(doc: jsPDF, top: number): number {
+    const entries: Array<{ fill: [number, number, number]; border?: [number, number, number]; label: string }> = [
+      { fill: [255, 245, 157], label: 'Returned - asset handed back' },
+      { fill: [255, 59, 48], label: 'Damaged - needs repair' },
+      { fill: [11, 61, 145], label: 'Sold - disposed of' },
+      { fill: [255, 255, 255], border: [170, 170, 170], label: 'No shading - currently assigned' }
+    ];
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const boxWidth = pageWidth - PDF_MARGIN * 2;
+    const boxHeight = 30;
+
+    doc.setDrawColor(200, 208, 220);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(PDF_MARGIN, top, boxWidth, boxHeight, 3, 3, 'FD');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(60, 60, 60);
+    doc.text('COLOUR KEY', PDF_MARGIN + 10, top + 12);
+
+    doc.setFont('helvetica', 'normal');
+    let x = PDF_MARGIN + 10;
+    const swatchY = top + 17;
+    for (const entry of entries) {
+      doc.setFillColor(entry.fill[0], entry.fill[1], entry.fill[2]);
+      const border = entry.border ?? entry.fill;
+      doc.setDrawColor(border[0], border[1], border[2]);
+      doc.rect(x, swatchY, 14, 8, 'FD');
+
+      doc.setTextColor(70, 70, 70);
+      doc.setFontSize(7.5);
+      doc.text(entry.label, x + 19, swatchY + 6);
+      x += 19 + doc.getTextWidth(entry.label) + 18;
+    }
+
+    doc.setTextColor(0, 0, 0);
+    doc.setDrawColor(0, 0, 0);
+    return top + boxHeight;
+  }
+
+  downloadPdf(): void {
     const rows = this.filteredAssignments;
     if (!rows.length) return;
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Assignments');
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    worksheet.columns = [
-      { width: 20 },
-      { width: 28 },
-      { width: 20 },
-      { width: 20 },
-      { width: 16 },
-      { width: 22 },
-      { width: 16 }
-    ];
+    doc.setFillColor(PDF_BRAND_FILL[0], PDF_BRAND_FILL[1], PDF_BRAND_FILL[2]);
+    doc.rect(PDF_MARGIN, 24, pageWidth - PDF_MARGIN * 2, 32, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(PDF_BRAND_TEXT[0], PDF_BRAND_TEXT[1], PDF_BRAND_TEXT[2]);
+    doc.text('CSV ASSET SHEET FOR SYSTEMS AND ACCESSORIES', pageWidth / 2, 45, { align: 'center' });
 
-    worksheet.mergeCells('A1:G1');
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'CSV ASSET SHEET FOR SYSTEMS AND ACCESSORIES';
-    titleCell.font = { bold: true, size: 18, color: { argb: 'FFFFCF3F' }, underline: true };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0B4EB3' } };
-    worksheet.getRow(1).height = 32;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(
+      `${rows.length} ${this.showAll ? 'assignment/return' : 'active assignment'}(s)`,
+      PDF_MARGIN,
+      70
+    );
+    doc.text(`Generated ${new Date().toLocaleDateString('en-CA')}`, pageWidth - PDF_MARGIN, 70, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
+
+    const legendBottom = this.drawLegendBox(doc, 80);
 
     const grouped = new Map<string, any[]>();
     for (const assignment of rows) {
@@ -366,88 +448,72 @@ export class ReportsPage implements OnInit {
       grouped.get(employeeName)!.push(assignment);
     }
 
-    let rowIndex = 3;
+    let cursorY = legendBottom + 12;
     for (const [employeeName, items] of Array.from(grouped.entries()).sort((a, b) => a[0].localeCompare(b[0]))) {
-      worksheet.mergeCells(`A${rowIndex}:G${rowIndex}`);
-      const employeeCell = worksheet.getCell(`A${rowIndex}`);
-      employeeCell.value = `Employee Name : ${employeeName}`;
-      employeeCell.font = { bold: true, size: 13 };
-      employeeCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      rowIndex += 1;
-
-      const header = worksheet.getRow(rowIndex);
-      header.values = [
-        'Asset ID',
-        'Asset Name',
-        'Mac Address',
-        'Serial Number',
-        'Assigned Date',
-        'Assigned By',
-        'Return Date'
-      ];
-      for (let c = 1; c <= 7; c += 1) {
-        const cell = header.getCell(c);
-        cell.font = { bold: true };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
+      if (cursorY + 70 > pageHeight - 40) {
+        doc.addPage();
+        cursorY = 40;
       }
-      rowIndex += 1;
 
-      for (const assignment of items.sort((a, b) => String(a.AssignedDate || '').localeCompare(String(b.AssignedDate || '')))) {
-        const row = worksheet.getRow(rowIndex);
-        row.values = [
-          this.getAssetTag(assignment.DetailedAssetId),
-          this.getAssetName(assignment.DetailedAssetId),
-          this.getAssetMacAddress(assignment.DetailedAssetId),
-          this.getAssetSerialNumber(assignment.DetailedAssetId),
-          this.formatDate(assignment.AssignedDate),
-          this.getAssignedByName(assignment.AssignedBy),
-          this.formatDate(assignment.ReturnedDate)
-        ];
+      doc.setFillColor(PDF_SECTION_FILL[0], PDF_SECTION_FILL[1], PDF_SECTION_FILL[2]);
+      doc.rect(PDF_MARGIN, cursorY, pageWidth - PDF_MARGIN * 2, 20, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(22, 53, 92);
+      doc.text(pdfText(`Employee Name : ${employeeName}`), pageWidth / 2, cursorY + 14, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      cursorY += 20;
 
-        const style = this.getReportRowXlsxStyle(assignment);
-        for (let c = 1; c <= 7; c += 1) {
-          const cell = row.getCell(c);
-          cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
-          };
-          if (style.background && style.fontColor) {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: style.background } };
-            cell.font = { color: { argb: style.fontColor } };
+      const sortedItems = [...items].sort((a, b) => String(a.AssignedDate || '').localeCompare(String(b.AssignedDate || '')));
+
+      autoTable(doc, {
+        startY: cursorY,
+        head: [['Asset ID', 'Asset Name', 'Make / Model', 'Serial Number', 'Assigned Date', 'Assigned By', 'Return Date']],
+        body: sortedItems.map((assignment) => [
+          pdfText(this.getAssetTag(assignment.DetailedAssetId)),
+          pdfText(this.getAssetName(assignment.DetailedAssetId)),
+          pdfText(this.getAssetMakeModel(assignment.DetailedAssetId)),
+          pdfText(this.getAssetSerialNumber(assignment.DetailedAssetId)),
+          pdfText(this.formatDate(assignment.AssignedDate)),
+          pdfText(this.getAssignedByName(assignment.AssignedBy)),
+          pdfText(this.formatDate(assignment.ReturnedDate))
+        ]),
+        theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 4, overflow: 'linebreak' },
+        headStyles: { fillColor: PDF_HEADER_FILL, textColor: [31, 31, 31], fontStyle: 'bold', halign: 'center' },
+        columnStyles: {
+          4: { halign: 'center' },
+          6: { halign: 'center' }
+        },
+        margin: { left: PDF_MARGIN, right: PDF_MARGIN },
+        didParseCell: (data) => {
+          if (data.section !== 'body') return;
+          const style = this.getReportRowPdfStyle(sortedItems[data.row.index]);
+          if (style) {
+            data.cell.styles.fillColor = style.fillColor;
+            data.cell.styles.textColor = style.textColor;
           }
         }
+      });
 
-        rowIndex += 1;
-      }
+      const lastTable = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable;
+      cursorY = (lastTable?.finalY ?? cursorY) + 16;
+    }
 
-      rowIndex += 1;
+    const pageCount = doc.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page += 1) {
+      doc.setPage(page);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      doc.setTextColor(130, 130, 130);
+      doc.text(`Page ${page} of ${pageCount}`, pageWidth - PDF_MARGIN, pageHeight - 16, { align: 'right' });
     }
 
     const filenameBase = this.selectedEmployeeId != null
       ? `employee_${this.selectedEmployeeId}_${this.showAll ? 'all' : 'assigned'}`
       : `all_employees_${this.showAll ? 'all' : 'assigned'}`;
 
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `${filenameBase}.xlsx`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    doc.save(`${filenameBase}.pdf`);
   }
 
   downloadCsv(): void {
@@ -475,7 +541,7 @@ export class ReportsPage implements OnInit {
       lines.push([
         escapeCsv('Asset ID'),
         escapeCsv('Asset Name'),
-        escapeCsv('Mac Address'),
+        escapeCsv('Make / Model'),
         escapeCsv('Serial Number'),
         escapeCsv('Assigned Date'),
         escapeCsv('Assigned By'),
@@ -493,7 +559,7 @@ export class ReportsPage implements OnInit {
         const row = [
           escapeCsv(this.getAssetTag(assignment.DetailedAssetId)),
           escapeCsv(this.getAssetName(assignment.DetailedAssetId)),
-          escapeCsv(this.getAssetMacAddress(assignment.DetailedAssetId)),
+          escapeCsv(this.getAssetMakeModel(assignment.DetailedAssetId)),
           escapeCsv(this.getAssetSerialNumber(assignment.DetailedAssetId)),
           escapeCsv(this.formatDate(assignment.AssignedDate)),
           escapeCsv(this.getAssignedByName(assignment.AssignedBy)),

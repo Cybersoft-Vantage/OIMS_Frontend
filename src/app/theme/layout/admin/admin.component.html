@@ -1,8 +1,8 @@
 <app-navigation
   class="pcoded-navbar menupos-fixed menu-light"
   [ngClass]="{
-    'navbar-collapsed': navCollapsed,
-    'mob-open': navCollapsedMob
+    'navbar-collapsed': navCollapsed && isDesktop,
+    'mob-open': navCollapsedMob()
   }"
   (NavCollapsedMob)="navMobClick()"
 ></app-navigation>

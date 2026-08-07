@@ -1,0 +1,100 @@
+/*
+ * Shared filter toolbar for the Inventory Management screens.
+ *
+ * One definition used by every list/report page so the filter bars look and behave
+ * the same everywhere. Global on purpose: component styles are scoped, and copying
+ * this block per component is what caused the inconsistency in the first place.
+ *
+ * Markup shape:
+ *   <div class="filter-toolbar">
+ *     <div class="row g-2 align-items-end">
+ *       <div class="col-...">
+ *         <label class="filter-label" for="x">Label</label>
+ *         <select id="x" class="form-select form-select-sm">...</select>
+ *       </div>
+ *       <div class="col-...">
+ *         <label class="filter-label" for="q">Search</label>
+ *         <div class="input-group input-group-sm filter-search">
+ *           <span class="input-group-text"><i class="feather icon-search"></i></span>
+ *           <input id="q" class="form-control" />
+ *           <button class="btn btn-outline-secondary"><i class="feather icon-x"></i></button>
+ *         </div>
+ *       </div>
+ *     </div>
+ *   </div>
+ */
+
+.filter-toolbar {
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--app-border, #dbe2ea);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--app-accent, #0d6efd) 4%, var(--app-surface, #ffffff));
+}
+
+.filter-label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--app-text, #1f2937) 62%, transparent);
+}
+
+.filter-toolbar .form-select,
+.filter-toolbar .form-control {
+  border-color: var(--app-border, #dbe2ea);
+}
+
+.filter-toolbar .form-select:focus,
+.filter-toolbar .form-control:focus {
+  border-color: var(--app-accent, #0d6efd);
+  box-shadow: 0 0 0 0.15rem color-mix(in srgb, var(--app-accent, #0d6efd) 22%, transparent);
+}
+
+/* Search field: leading icon merged with the input, optional trailing clear button. */
+.filter-search .input-group-text {
+  background: transparent;
+  border-right: 0;
+  border-color: var(--app-border, #dbe2ea);
+  color: color-mix(in srgb, var(--app-text, #1f2937) 55%, transparent);
+}
+
+.filter-search .form-control {
+  border-left: 0;
+}
+
+.filter-search .form-control:focus {
+  border-left: 0;
+  box-shadow: none;
+}
+
+/* Toolbar buttons size to their column. Pages sometimes set a `min-width` on every
+   `.card-header .btn` for their action buttons; without this, a Reset button sitting
+   in a narrow column overflows the toolbar. */
+.filter-toolbar .btn {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+/* Toggle rendered inline with the filter controls, aligned to the inputs' baseline. */
+.filter-toolbar .filter-switch {
+  display: flex;
+  align-items: center;
+  min-height: calc(1.5em + 0.5rem + 2px); /* matches .form-select-sm height */
+  margin-bottom: 0;
+}
+
+/* Pill showing the current result count next to a card title. */
+.count-badge {
+  align-self: center;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border-radius: 999px;
+  color: var(--app-accent, #0d6efd);
+  background: color-mix(in srgb, var(--app-accent, #0d6efd) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--app-accent, #0d6efd) 28%, transparent);
+}

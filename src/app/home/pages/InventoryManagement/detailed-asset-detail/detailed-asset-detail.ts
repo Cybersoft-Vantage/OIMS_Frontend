@@ -18,6 +18,9 @@ export class DetailedAssetDetail implements OnInit {
   subCategories: DetailedCategory[] = [];
   history: DetailedAssetHistory[] = [];
   statuses: AssetStatus[] = [];
+  customFieldRows: Array<{ key: string; type: string; value: any }> = [];
+  customValuesRaw = '';
+  customValuesError = '';
   historySearch = '';
   historyPage = 1;
   historyPageSize = 10;
@@ -55,10 +58,13 @@ export class DetailedAssetDetail implements OnInit {
         if (this.categories.length) {
           this.applyCategorySelection();
         }
+        this.buildCustomFieldRows({ preserveEdits: false });
         this.cd.detectChanges();
       },
       error: () => {
         this.model = undefined;
+        this.customFieldRows = [];
+        this.customValuesRaw = '';
         this.cd.detectChanges();
       }
     });
@@ -69,6 +75,7 @@ export class DetailedAssetDetail implements OnInit {
       next: (d) => {
         this.categories = d;
         this.applyCategorySelection();
+        this.buildCustomFieldRows({ preserveEdits: true });
         this.cd.detectChanges();
       },
       error: () => {
@@ -112,6 +119,7 @@ export class DetailedAssetDetail implements OnInit {
     if (category?.children?.length) {
       this.subCategories = category.children;
     }
+    this.buildCustomFieldRows({ preserveEdits: true });
   }
 
   onSubCategoryChange(subCategoryName?: string) {
@@ -128,6 +136,7 @@ export class DetailedAssetDetail implements OnInit {
 
     this.model.DetailedCategoryId = parent.DetailedCategoryId;
     this.subCategories = parent.children ?? [];
+    this.buildCustomFieldRows({ preserveEdits: true });
   }
 
   private findSubcategoryParent(name: string): DetailedCategory | undefined {
@@ -154,7 +163,143 @@ export class DetailedAssetDetail implements OnInit {
       form.form.markAllAsTouched();
       return;
     }
+    if (!this.applyCustomValues()) {
+      return;
+    }
     this.crud.updateDetailedAsset(this.id, this.model).subscribe({ next: () => { this.notify.success('Saved'); this.load(); }, error: () => this.notify.error('Unable to save detailed asset.') });
+  }
+
+  controlName(key: string): string {
+    return `cv_${(key || '').toString().replace(/\s+/g, '_')}`;
+  }
+
+  /** Custom schema declared on the selected subcategory, falling back to the parent category. */
+  private getCustomSchemaFields(): Array<{ key: string; type: string }> {
+    if (!this.model) return [];
+
+    const parse = (schema?: string | null): Array<{ key: string; type: string }> => {
+      if (!schema) return [];
+      try {
+        const parsed = JSON.parse(schema);
+        if (!Array.isArray(parsed)) return [];
+        return parsed
+          .filter((field) => field && field.key)
+          .map((field) => ({ key: String(field.key), type: String(field.type || 'text') }));
+      } catch {
+        return [];
+      }
+    };
+
+    const parent = this.model.DetailedCategoryId ? this.findCategory(this.categories, this.model.DetailedCategoryId) : undefined;
+    const subCategoryName = (this.model.SubCategory || '').toString().trim();
+    const child = subCategoryName
+      ? (parent?.children ?? []).find((item) => (item.Name || '').toString().trim() === subCategoryName)
+      : undefined;
+
+    const childFields = parse(child?.CustomSchema);
+    return childFields.length ? childFields : parse(parent?.CustomSchema);
+  }
+
+  private parseStoredCustomValues(): Record<string, any> | null {
+    if (!this.model?.CustomValues) return {};
+    try {
+      const parsed = JSON.parse(this.model.CustomValues);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        return parsed as Record<string, any>;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private inferFieldType(value: any): string {
+    if (typeof value === 'boolean') return 'boolean';
+    if (typeof value === 'number') return 'number';
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return 'date';
+    return 'text';
+  }
+
+  /**
+   * Rebuilds the editable custom-value rows from the category schema plus whatever is
+   * stored on the asset. `preserveEdits` keeps values the user has already typed in.
+   */
+  private buildCustomFieldRows(options: { preserveEdits: boolean }): void {
+    this.customValuesError = '';
+
+    if (!this.model) {
+      this.customFieldRows = [];
+      this.customValuesRaw = '';
+      return;
+    }
+
+    const pending = options.preserveEdits
+      ? this.customFieldRows.reduce<Record<string, any>>((acc, row) => {
+          acc[row.key] = row.value;
+          return acc;
+        }, {})
+      : {};
+
+    const stored = this.parseStoredCustomValues();
+    if (stored === null) {
+      // Stored value is not a JSON object - fall back to raw editing.
+      this.customFieldRows = [];
+      this.customValuesRaw = this.model.CustomValues || '';
+      return;
+    }
+
+    const rows: Array<{ key: string; type: string; value: any }> = [];
+    const seen = new Set<string>();
+
+    for (const field of this.getCustomSchemaFields()) {
+      const value = options.preserveEdits && field.key in pending ? pending[field.key] : stored[field.key] ?? null;
+      rows.push({ key: field.key, type: field.type, value });
+      seen.add(field.key);
+    }
+
+    for (const key of Object.keys(stored)) {
+      if (seen.has(key)) continue;
+      const value = options.preserveEdits && key in pending ? pending[key] : stored[key];
+      rows.push({ key, type: this.inferFieldType(stored[key]), value });
+      seen.add(key);
+    }
+
+    this.customFieldRows = rows;
+    this.customValuesRaw = rows.length ? '' : this.model.CustomValues || '';
+  }
+
+  /** Writes the edited custom values back onto the model. Returns false when the raw JSON is invalid. */
+  private applyCustomValues(): boolean {
+    if (!this.model) return false;
+    this.customValuesError = '';
+
+    if (this.customFieldRows.length) {
+      const payload: Record<string, any> = {};
+      for (const row of this.customFieldRows) {
+        const key = (row.key || '').toString().trim();
+        if (!key) continue;
+        payload[key] = row.value === '' || row.value === undefined ? null : row.value;
+      }
+      this.model.CustomValues = JSON.stringify(payload);
+      return true;
+    }
+
+    const raw = (this.customValuesRaw || '').trim();
+    if (!raw) {
+      this.model.CustomValues = null;
+      return true;
+    }
+
+    try {
+      JSON.parse(raw);
+    } catch {
+      this.customValuesError = 'Custom Values must be valid JSON, e.g. {"cpu":"i7","ram":"16GB"}.';
+      this.notify.error(this.customValuesError);
+      return false;
+    }
+
+    this.model.CustomValues = raw;
+    return true;
   }
 
   closeEditor(): void {
@@ -184,16 +329,6 @@ export class DetailedAssetDetail implements OnInit {
       }
     }
     return undefined;
-  }
-
-  get customValuesDisplay() {
-    if (!this.model?.CustomValues) return [];
-    try {
-      const parsed = JSON.parse(this.model.CustomValues);
-      return Object.keys(parsed).map((key) => ({ key, value: parsed[key] }));
-    } catch {
-      return [];
-    }
   }
 
   get filteredHistory() {
@@ -233,6 +368,11 @@ export class DetailedAssetDetail implements OnInit {
 
   resetHistoryPage(): void {
     this.historyPage = 1;
+  }
+
+  clearHistorySearch(): void {
+    this.historySearch = '';
+    this.resetHistoryPage();
   }
 
   getHistoryDetail(history: DetailedAssetHistory): string {

@@ -22,15 +22,24 @@ export class AdminComponent {
   private themeService = inject(ThemeService);
 
   // public props
-  navCollapsed!: boolean;
-  navCollapsedMob: boolean;
+  navCollapsed = false;
+  /**
+   * Mobile drawer state. Held in the shared service because nav items close the
+   * drawer on navigation - reading the signal here is what actually applies the
+   * `mob-open` class, so the two stay in sync.
+   */
+  readonly navCollapsedMob = this.layoutState.navCollapsedMob;
   windowWidth: number;
 
   // constructor
   constructor() {
     this.windowWidth = window.innerWidth;
-    this.navCollapsedMob = false;
     this.themeService.initialize();
+  }
+
+  /** The icon-rail collapse only applies from the large breakpoint upwards. */
+  get isDesktop(): boolean {
+    return this.windowWidth >= 992;
   }
 
   @HostListener('window:resize', ['$event'])
@@ -39,24 +48,14 @@ export class AdminComponent {
     this.windowWidth = event.target.innerWidth;
     if (this.windowWidth < 992) {
       document.querySelector('.pcoded-navbar')?.classList.add('menupos-static');
-      if (document.querySelector('app-navigation.pcoded-navbar')?.classList.contains('navbar-collapsed')) {
-        document.querySelector('app-navigation.pcoded-navbar')?.classList.remove('navbar-collapsed');
-      }
+    } else {
+      // Leaving the mobile breakpoint: make sure the drawer is not left open.
+      this.layoutState.closeNavCollapsedMob();
     }
   }
 
   // public method
   navMobClick() {
-    // if (this.windowWidth < 992) {
-    //   if (this.navCollapsedMob && !document.querySelector('app-navigation.pcoded-navbar')?.classList.contains('mob-open')) {
-    //     this.navCollapsedMob = !this.navCollapsedMob;
-    //     setTimeout(() => {
-    //       this.navCollapsedMob = !this.navCollapsedMob;
-    //     }, 100);
-    //   } else {
-    //     this.navCollapsedMob = !this.navCollapsedMob;
-    //   }
-    // }
     this.layoutState.toggleNavCollapsedMob();
   }
 
@@ -67,8 +66,6 @@ export class AdminComponent {
   }
 
   closeMenu() {
-    if (document.querySelector('app-navigation.pcoded-navbar')?.classList.contains('mob-open')) {
-      document.querySelector('app-navigation.pcoded-navbar')?.classList.remove('mob-open');
-    }
+    this.layoutState.closeNavCollapsedMob();
   }
 }

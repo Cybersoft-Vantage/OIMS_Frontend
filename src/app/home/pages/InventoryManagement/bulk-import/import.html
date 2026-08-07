@@ -4,7 +4,8 @@
       <h5 class="mb-0">Import</h5>
       <p class="text-muted mb-0">Upload spreadsheet data to bulk import inventory records.</p>
     </div>
-    <button class="btn btn-primary btn-sm" (click)="upload()">Upload</button>
+    <button class="btn btn-primary btn-sm" (click)="upload()"
+      [disabled]="!selectedFile || missingRequiredColumns.length > 0">Upload</button>
   </div>
   <div class="card-body">
     <div class="mb-3">
@@ -15,6 +16,78 @@
     </div>
     <div *ngIf="selectedFile" class="alert alert-secondary">
       Selected file: {{ selectedFile.name }}
+    </div>
+
+    <!-- Expected columns, shown before a file is chosen. -->
+    <div *ngIf="!detectedColumns.length" class="mb-3">
+      <h6 class="mb-2">Template columns</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-1">
+          <thead>
+            <tr>
+              <th>Column</th>
+              <th>Imports into</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let column of expectedColumns">
+              <td class="fw-semibold text-nowrap">
+                {{ column.header }}
+                <span *ngIf="column.required" class="text-danger" title="Required">*</span>
+              </td>
+              <td class="text-nowrap">{{ column.field }}</td>
+              <td class="small text-muted">{{ column.hint || '' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="small text-muted">
+        <span class="text-danger">*</span> required. Column order does not matter, and spacing or casing
+        differences are accepted.
+      </div>
+    </div>
+
+    <!-- Column check for the chosen file. -->
+    <div *ngIf="detectedColumns.length" class="mb-3">
+      <h6 class="mb-2">Column mapping</h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-bordered align-middle mb-2">
+          <thead>
+            <tr>
+              <th>Column in your file</th>
+              <th>Imports into</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let column of detectedColumns">
+              <td class="text-nowrap">{{ column.header }}</td>
+              <td>
+                <span *ngIf="column.field" class="badge bg-success-subtle text-success-emphasis">{{ column.field }}</span>
+                <span *ngIf="!column.field" class="badge bg-secondary">Ignored - not a known column</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="missingRequiredColumns.length" class="alert alert-danger py-2 mb-2">
+        <strong>Missing required column(s)</strong> - the import cannot run without them:
+        <ul class="mb-0 mt-1">
+          <li *ngFor="let column of missingRequiredColumns">
+            <strong>{{ column.header }}</strong> - needed for {{ column.field }}
+          </li>
+        </ul>
+      </div>
+
+      <div *ngIf="ignoredColumns.length" class="alert alert-warning py-2 mb-0">
+        These columns are not recognised and their values will not be imported:
+        <strong>{{ ignoredColumns.length }}</strong> column(s) listed above.
+      </div>
+
+      <div *ngIf="!hasHeaderProblems" class="alert alert-success py-2 mb-0">
+        All columns recognised - every value will land in its matching field.
+      </div>
     </div>
 
     <div *ngIf="previewHeaders.length" class="mb-3">

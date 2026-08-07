@@ -22,7 +22,7 @@
 }
 
 .info-icon:hover {
-  background: rgba(13, 110, 253, 0.16);
+  background: var(--app-bg);
 }
 
 .info-popover {
@@ -35,7 +35,7 @@
   max-width: 24rem;
   padding: 0.75rem;
   margin-top: 0.5rem;
-  background: #fff;
+  background: var(--app-bg);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
@@ -88,7 +88,7 @@
 }
 .asset-tag-modal-overlay .modal-body {
   padding: 1rem;
-  background: var(--app-surface-2, #fafafa);
+  background: var(--app-surface-2);
 }
 .asset-tag-modal-overlay .form-select.form-select-sm {
   min-height: 38px;
@@ -102,7 +102,7 @@
   background: rgba(13,110,253,0.03);
 }
 .asset-tag-modal-overlay .btn-close {
-  background: transparent;
+  
   border: 0;
   width: 36px;
   height: 36px;
@@ -119,14 +119,14 @@
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
-//   background: rgba(13, 110, 253, 0.08);
+background: rgba(13, 110, 253, 0.08);
   color: #0d6efd;
   cursor: default;
   transition: background-color 0.2s ease;
 }
 
 .info-icon:hover {
-  background: rgba(13, 110, 253, 0.16);
+  background: var(--app-bg);
 }
 
 .info-icon i {
@@ -154,7 +154,7 @@
   max-width: 24rem;
   padding: 0.75rem;
   margin-top: 0.5rem;
-  background: #fff;
+  background: var(--app-bg);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 0.5rem;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);

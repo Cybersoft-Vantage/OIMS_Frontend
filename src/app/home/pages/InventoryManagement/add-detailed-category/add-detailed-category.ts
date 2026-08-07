@@ -1,8 +1,18 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { NotificationService } from 'src/app/services/notification.service';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
-import { OimsCrudService, DetailedCategory } from 'src/app/services/oims-crud.service';
+import { OimsCrudService, DetailedAsset, DetailedCategory } from 'src/app/services/oims-crud.service';
 import { NgForm } from '@angular/forms';
+
+type CategoryTab = 'addcategory' | 'showcategory' | 'visibility' | 'customfields' | 'deleted';
+
+/** One row of the flattened category overview: a parent followed by its subcategories. */
+interface CategoryRow {
+  category: DetailedCategory;
+  parent?: DetailedCategory;
+  isSubcategory: boolean;
+}
 
 @Component({
   selector: 'app-add-detailed-category',
@@ -11,14 +21,29 @@ import { NgForm } from '@angular/forms';
   styleUrl: './add-detailed-category.scss'
 })
 export class AddDetailedCategory implements OnInit {
-  constructor(private readonly crud: OimsCrudService, private cd: ChangeDetectorRef, private readonly notify: NotificationService) {}
+  constructor(
+    private readonly crud: OimsCrudService,
+    private cd: ChangeDetectorRef,
+    private readonly notify: NotificationService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
+  ) {}
+
+  activeTab: CategoryTab = 'addcategory';
 
   categories: DetailedCategory[] = [];
   deletedCategories: DetailedCategory[] = [];
+  assets: DetailedAsset[] = [];
   flatCategories: Array<{ id?: number; name: string }> = [];
   editingId: number | null = null;
   selectedCategoryId: number | null = null;
   SubcategoryTagName: string = '';
+
+  // Overview / visibility tab filters
+  search = '';
+  visibilityFilter: 'all' | 'visible' | 'hidden' = 'all';
+  typeFilter: 'all' | 'parent' | 'sub' = 'all';
+  pendingVisibilityIds: { [id: number]: boolean } = {};
 
   // custom fields editor
   customFields: Array<{ key: string; type: string; required?: boolean }> = [];
@@ -50,8 +75,27 @@ export class AddDetailedCategory implements OnInit {
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.subscribe((params) => {
+      const tab = params.get('tab') as CategoryTab | null;
+      this.activeTab = this.isKnownTab(tab) ? tab : 'addcategory';
+      this.cd.detectChanges();
+    });
     this.load();
     this.loadDeletedCategories();
+    this.loadAssets();
+  }
+
+  private isKnownTab(tab: string | null): tab is CategoryTab {
+    return tab === 'addcategory' || tab === 'showcategory' || tab === 'visibility' || tab === 'customfields' || tab === 'deleted';
+  }
+
+  setActiveTab(tab: CategoryTab): void {
+    this.activeTab = tab;
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge'
+    });
   }
 
   load() {
@@ -82,6 +126,19 @@ export class AddDetailedCategory implements OnInit {
     });
   }
 
+  private loadAssets() {
+    this.crud.getDetailedAssets().subscribe({
+      next: (d) => {
+        this.assets = d || [];
+        this.cd.detectChanges();
+      },
+      error: () => {
+        this.assets = [];
+        this.cd.detectChanges();
+      }
+    });
+  }
+
   private flattenCategories(categories: DetailedCategory[]): Array<{ id?: number; name: string }> {
     // Return only top-level (parent) categories for the ParentId selector.
     const list: Array<{ id?: number; name: string }> = [];
@@ -92,6 +149,200 @@ export class AddDetailedCategory implements OnInit {
     }
     return list;
   }
+
+  // ---------------------------------------------------------------- overview
+
+  /** Parents and their subcategories flattened into display order. */
+  get categoryRows(): CategoryRow[] {
+    const rows: CategoryRow[] = [];
+    for (const parent of this.categories) {
+      rows.push({ category: parent, isSubcategory: false });
+      for (const child of parent.children ?? []) {
+        rows.push({ category: child, parent, isSubcategory: true });
+      }
+    }
+    return rows;
+  }
+
+  get filteredCategoryRows(): CategoryRow[] {
+    const q = this.search?.toLowerCase().trim();
+    return this.categoryRows.filter((row) => {
+      if (this.typeFilter === 'parent' && row.isSubcategory) return false;
+      if (this.typeFilter === 'sub' && !row.isSubcategory) return false;
+      if (this.visibilityFilter === 'hidden' && !this.isHidden(row.category)) return false;
+      if (this.visibilityFilter === 'visible' && this.isHidden(row.category)) return false;
+      if (!q) return true;
+      return (
+        String(row.category.Name || '').toLowerCase().includes(q) ||
+        String(row.category.SubcategoryTagName || '').toLowerCase().includes(q) ||
+        String(row.category.Description || '').toLowerCase().includes(q) ||
+        String(row.parent?.Name || '').toLowerCase().includes(q)
+      );
+    });
+  }
+
+  resetFilters(): void {
+    this.search = '';
+    this.visibilityFilter = 'all';
+    this.typeFilter = 'all';
+  }
+
+  get hasOverviewFilters(): boolean {
+    return !!this.search?.trim() || this.visibilityFilter !== 'all' || this.typeFilter !== 'all';
+  }
+
+  get parentCount(): number {
+    return this.categories.length;
+  }
+
+  get subCategoryCount(): number {
+    return this.categories.reduce((total, parent) => total + (parent.children?.length ?? 0), 0);
+  }
+
+  get hiddenCount(): number {
+    return this.categoryRows.filter((row) => this.isHidden(row.category)).length;
+  }
+
+  /** Assets that are currently invisible in the asset listings because their category is hidden. */
+  get hiddenAssetCount(): number {
+    return this.categoryRows
+      .filter((row) => this.isHidden(row.category))
+      .reduce((total, row) => total + this.getAssetCount(row.category), 0);
+  }
+
+  isHidden(category?: DetailedCategory | null): boolean {
+    // The API returns 0/1; Number() also tolerates a boolean or numeric string.
+    return !!category && Number(category.IsHidden) === 1;
+  }
+
+  /**
+   * Assets attached to this category. Parents own assets directly via
+   * DetailedCategoryId; subcategories are matched by name because assets store
+   * the subcategory as text (DetailedAsset.SubCategory).
+   */
+  getAssetCount(category: DetailedCategory, parent?: DetailedCategory): number {
+    if (!category) return 0;
+    const isSub = !!category.ParentId || !!parent;
+    if (!isSub) {
+      return this.assets.filter((asset) => asset.DetailedCategoryId === category.DetailedCategoryId).length;
+    }
+    const parentId = category.ParentId ?? parent?.DetailedCategoryId ?? null;
+    const name = (category.Name || '').trim().toLowerCase();
+    return this.assets.filter(
+      (asset) =>
+        (parentId == null || asset.DetailedCategoryId === parentId) &&
+        (asset.SubCategory || '').trim().toLowerCase() === name
+    ).length;
+  }
+
+  getCustomFieldCount(category: DetailedCategory): number {
+    return this.parseCustomFields(category).length;
+  }
+
+  parseCustomFields(category: DetailedCategory): Array<{ key: string; type: string; required?: boolean }> {
+    if (!category?.CustomSchema) return [];
+    try {
+      const parsed = JSON.parse(category.CustomSchema);
+      return Array.isArray(parsed) ? parsed.filter((field) => field && field.key) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  /** Categories that declare at least one custom field, for the Custom Fields tab. */
+  get customFieldRows(): CategoryRow[] {
+    return this.categoryRows.filter((row) => this.getCustomFieldCount(row.category) > 0);
+  }
+
+  // -------------------------------------------------------------- visibility
+
+  toggleVisibility(category: DetailedCategory, parent?: DetailedCategory): void {
+    const id = category?.DetailedCategoryId;
+    if (!id || this.pendingVisibilityIds[id]) return;
+
+    const hide = !this.isHidden(category);
+    const isParent = !category.ParentId && !parent;
+    const childCount = category.children?.length ?? 0;
+    const assetCount = this.getAssetCount(category, parent);
+
+    const confirmLines = [`${hide ? 'Hide' : 'Show'} "${category.Name}"?`];
+    if (hide) {
+      confirmLines.push(
+        `${assetCount} asset(s) will ${assetCount === 1 ? 'be' : 'be'} hidden from the asset list and pickers.`
+      );
+      if (isParent && childCount) {
+        confirmLines.push(`Its ${childCount} subcategory(ies) will be hidden as well.`);
+      }
+      confirmLines.push('Nothing is deleted - you can show it again at any time.');
+    } else if (isParent && childCount) {
+      confirmLines.push(`Its ${childCount} subcategory(ies) will be shown as well.`);
+    }
+
+    this.notify.confirmModal(confirmLines.join('\n\n')).then((ok) => {
+      if (!ok) return;
+      this.pendingVisibilityIds[id] = true;
+      this.crud.setDetailedCategoryVisibility(id, hide).subscribe({
+        next: () => {
+          delete this.pendingVisibilityIds[id];
+          this.notify.success(`"${category.Name}" is now ${hide ? 'hidden' : 'visible'}.`);
+          this.load();
+        },
+        error: () => {
+          delete this.pendingVisibilityIds[id];
+          this.notify.error('Unable to update category visibility.');
+          this.cd.detectChanges();
+        }
+      });
+    });
+  }
+
+  isVisibilityPending(category: DetailedCategory): boolean {
+    const id = category?.DetailedCategoryId;
+    return !!id && !!this.pendingVisibilityIds[id];
+  }
+
+  /** Hides or shows every parent (cascading to subcategories) in one go. */
+  setAllVisibility(hide: boolean): void {
+    const targets = this.categories.filter((parent) => this.isHidden(parent) !== hide && parent.DetailedCategoryId != null);
+    if (!targets.length) {
+      this.notify.info(hide ? 'All categories are already hidden.' : 'All categories are already visible.');
+      return;
+    }
+
+    this.notify.confirmModal(`${hide ? 'Hide' : 'Show'} all ${targets.length} category tree(s)?`).then((ok) => {
+      if (!ok) return;
+      let remaining = targets.length;
+      let failed = 0;
+      for (const parent of targets) {
+        const id = parent.DetailedCategoryId!;
+        this.pendingVisibilityIds[id] = true;
+        this.crud.setDetailedCategoryVisibility(id, hide).subscribe({
+          next: () => {
+            delete this.pendingVisibilityIds[id];
+            remaining -= 1;
+            if (remaining === 0) this.finishBulkVisibility(hide, failed);
+          },
+          error: () => {
+            delete this.pendingVisibilityIds[id];
+            failed += 1;
+            remaining -= 1;
+            if (remaining === 0) this.finishBulkVisibility(hide, failed);
+          }
+        });
+      }
+    });
+  }
+
+  private finishBulkVisibility(hide: boolean, failed: number): void {
+    if (failed) {
+      this.notify.error(`${failed} category(ies) could not be updated.`);
+    } else {
+      this.notify.success(`All categories are now ${hide ? 'hidden' : 'visible'}.`);
+    }
+    this.load();
+  }
+
+  // ------------------------------------------------------------- add / edit
 
   edit(cat: DetailedCategory) {
     this.selectedCategoryId = cat.DetailedCategoryId ?? null;
@@ -123,10 +374,17 @@ export class AddDetailedCategory implements OnInit {
     });
   }
 
+  /** Opens a category in the editor tab - used by the overview and custom-field tabs. */
+  editInFormTab(cat: DetailedCategory): void {
+    this.edit(cat);
+    this.setActiveTab('addcategory');
+  }
+
   addChildTo(parent: DetailedCategory) {
     this.clear();
     this.model.ParentId = parent.DetailedCategoryId ?? null;
     this.selectedCategoryId = parent.DetailedCategoryId ?? null;
+    this.setActiveTab('addcategory');
   }
 
   clear() {
@@ -134,6 +392,7 @@ export class AddDetailedCategory implements OnInit {
     this.selectedCategoryId = null;
     this.model = { Name: '', ParentId: null, SubcategoryTagName: '', Description: '', CustomSchema: '' };
     this.customFields = [];
+    this.saveError = '';
   }
 
   addField() {
@@ -211,8 +470,8 @@ export class AddDetailedCategory implements OnInit {
     if (!f.valid) return;
     this.saveError = '';
     const normalizedTag = (this.model.SubcategoryTagName || '').toString().trim().toUpperCase();
-    if (this.model.ParentId && normalizedTag.length !== 3) {
-      this.saveError = 'Subcategory tag must be exactly 3 characters.';
+    if (this.model.ParentId && !normalizedTag) {
+      this.saveError = 'Subcategory tag required.';
       return;
     }
 
@@ -231,7 +490,7 @@ export class AddDetailedCategory implements OnInit {
       try {
         JSON.parse(this.model.CustomSchema);
         payload.CustomSchema = this.model.CustomSchema;
-      } catch (ex) {
+      } catch {
         this.saveError = 'Custom schema JSON is invalid. Please fix before saving.';
         return;
       }
@@ -240,13 +499,14 @@ export class AddDetailedCategory implements OnInit {
     }
 
     this.isSaving = true;
-    const onSuccess = (resp?: any) => {
+    const onSuccess = () => {
       this.isSaving = false;
       this.saveMessage = 'Saved';
       this.notify.success('Category saved successfully.');
       setTimeout(() => (this.saveMessage = ''), 2000);
       this.load();
       this.loadDeletedCategories();
+      this.loadAssets();
       this.clear();
       this.cd.detectChanges();
     };
@@ -273,6 +533,7 @@ export class AddDetailedCategory implements OnInit {
       this.crud.deleteDetailedCategory(id).subscribe({
         next: () => {
           this.notify.info('Category soft-deleted. You can restore it from the deleted list.');
+          if (this.editingId === id) this.clear();
           this.load();
           this.loadDeletedCategories();
         },
@@ -301,5 +562,11 @@ export class AddDetailedCategory implements OnInit {
         }
       });
     });
+  }
+
+  getParentName(category: DetailedCategory): string {
+    if (!category?.ParentId) return '-';
+    const parent = this.categories.find((item) => item.DetailedCategoryId === category.ParentId);
+    return parent?.Name || '-';
   }
 }

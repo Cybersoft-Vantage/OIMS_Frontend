@@ -1,5 +1,5 @@
 // angular import
-import { Component, output } from '@angular/core';
+import { Component, HostListener, output } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 
@@ -30,6 +30,13 @@ export class NavBarComponent {
     this.windowWidth = window.innerWidth;
   }
 
+  @HostListener('window:resize', ['$event'])
+  // eslint-disable-next-line
+  onResize(event: any): void {
+    // Kept current so the breakpoint guards below do not act on a stale width.
+    this.windowWidth = event?.target?.innerWidth ?? window.innerWidth;
+  }
+
   // public method
   toggleMobOption() {
     this.menuClass = !this.menuClass;
@@ -37,13 +44,13 @@ export class NavBarComponent {
   }
 
   navCollapse() {
-    if (this.windowWidth >= 992) {
+    if (window.innerWidth >= 992) {
       this.NavCollapse.emit();
     }
   }
 
   navCollapseMob() {
-    if (this.windowWidth < 992) {
+    if (window.innerWidth < 992) {
       this.NavCollapsedMob.emit();
     }
   }

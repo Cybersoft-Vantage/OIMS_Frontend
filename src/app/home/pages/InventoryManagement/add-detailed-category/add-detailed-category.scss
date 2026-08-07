@@ -14,7 +14,7 @@
 
 .category-tree .category-name {
   font-weight: 600;
-  color: #1f497d;
+  color: var(--app-text);
   text-decoration: none;
 }
 
@@ -66,4 +66,68 @@
 
 .category-form-card .btn-primary {
   min-width: 92px;
+}
+
+/* ------------------------------------------------------------- visibility */
+.badge-hidden {
+  background: color-mix(in srgb, var(--app-text, #1f2937) 12%, transparent);
+  color: color-mix(in srgb, var(--app-text, #1f2937) 75%, transparent);
+  border: 1px solid var(--app-border, #dbe2ea);
+  font-weight: 600;
+}
+
+tr.row-hidden > td {
+  opacity: 0.62;
+}
+
+.visibility-group {
+  border: 1px solid var(--app-border, #dbe2ea);
+  border-radius: 0.65rem;
+  padding: 0.85rem 1rem;
+  background: var(--app-surface, #ffffff);
+}
+
+.visibility-row {
+  padding: 0.35rem 0;
+}
+
+.visibility-children {
+  margin-left: 1rem;
+  padding-left: 0.9rem;
+  border-left: 2px solid var(--app-border, #dbe2ea);
+}
+
+.visibility-row.child + .visibility-row.child {
+  border-top: 1px dashed var(--app-border, #dbe2ea);
+}
+
+.visibility-group .form-check-input {
+  cursor: pointer;
+}
+
+.visibility-group .form-check-input:disabled {
+  cursor: progress;
+}
+
+/* ----------------------------------------------------------- custom fields */
+.field-badge {
+  background: color-mix(in srgb, var(--app-accent, #0d6efd) 10%, transparent);
+  color: var(--app-text, #1f2937);
+  border: 1px solid color-mix(in srgb, var(--app-accent, #0d6efd) 25%, transparent);
+  font-weight: 500;
+}
+
+.field-badge .field-type {
+  margin-left: 0.35rem;
+  padding-left: 0.35rem;
+  border-left: 1px solid color-mix(in srgb, var(--app-text, #1f2937) 25%, transparent);
+  font-size: 0.72em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.field-badge .field-required {
+  margin-left: 0.2rem;
+  color: #dc3545;
+  font-weight: 700;
 }

@@ -152,45 +152,65 @@
             <div class="row">
                 <div class="col-12">
                     <div class="border rounded p-3 bg-white">
-                        <div
-                            class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center mb-3 gap-3">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                             <div>
                                 <h6 class="mb-1">Maintenance History</h6>
-                                <p class="text-muted mb-0"> View damage and repair history.
-                                </p>
+                                <p class="text-muted mb-0">View damage and repair history.</p>
                             </div>
-                            <div
-                                class="d-flex flex-column flex-lg-row gap-2 w-100 w-lg-auto align-items-start align-items-lg-center">
-                                <div class="input-group input-group-sm" style="min-width: 280px; max-width: 420px;">
-                                    <input type="search" class="form-control"
-                                        placeholder="Search work order, asset, vendor..." [(ngModel)]="historySearch"
-                                        (ngModelChange)="historyPage = 1" />
+                            <span class="count-badge">{{ filteredMaintenanceHistoryRows.length }} record(s)</span>
+                        </div>
+
+                        <div class="filter-toolbar mb-3">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-12 col-sm-6 col-lg-4">
+                                    <label class="filter-label" for="maintHistorySearch">Search</label>
+                                    <div class="input-group input-group-sm filter-search">
+                                        <span class="input-group-text"><i class="feather icon-search"></i></span>
+                                        <input id="maintHistorySearch" type="search" class="form-control"
+                                            placeholder="Work order, asset, vendor" [(ngModel)]="historySearch"
+                                            (ngModelChange)="historyPage = 1" />
+                                        <button *ngIf="historySearch" class="btn btn-outline-secondary" type="button"
+                                            title="Clear search" (click)="clearHistorySearch()"><i class="feather icon-x"></i></button>
+                                    </div>
                                 </div>
-                                <select class="form-select form-select-sm" [(ngModel)]="historyStatusFilter"
-                                    (ngModelChange)="historyPage = 1">
-                                    <option value="">All Statuses</option>
-                                    <option value="damaged">Damaged</option>
-                                    <option value="maintenance">Maintenance</option>
-                                    <option value="open">Open</option>
-                                    <option value="in progress">In Progress</option>
-                                    <option value="repaired">Repaired</option>
-                                    <option value="completed">Completed</option>
-                                </select>
-                                <select class="form-select form-select-sm" [(ngModel)]="historyVendorFilter"
-                                    (ngModelChange)="historyPage = 1">
-                                    <option [ngValue]="null">All Vendors</option>
-                                    <option *ngFor="let vendor of vendors" [ngValue]="vendor.VendorId">{{ vendor.Name }}
-                                    </option>
-                                </select>
-                                <div class="d-flex align-items-center gap-2">
-                                    <label class="mb-0 small text-muted">Rows</label>
-                                    <select class="form-select form-select-sm" [(ngModel)]="historyPageSize"
-                                        (ngModelChange)="historyPage = 1">
+
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label class="filter-label" for="maintHistoryStatus">Status</label>
+                                    <select id="maintHistoryStatus" class="form-select form-select-sm"
+                                        [(ngModel)]="historyStatusFilter" (ngModelChange)="historyPage = 1">
+                                        <option value="">All Statuses</option>
+                                        <option value="damaged">Damaged</option>
+                                        <option value="maintenance">Maintenance</option>
+                                        <option value="open">Open</option>
+                                        <option value="in progress">In Progress</option>
+                                        <option value="repaired">Repaired</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label class="filter-label" for="maintHistoryVendor">Vendor</label>
+                                    <select id="maintHistoryVendor" class="form-select form-select-sm"
+                                        [(ngModel)]="historyVendorFilter" (ngModelChange)="historyPage = 1">
+                                        <option [ngValue]="null">All Vendors</option>
+                                        <option *ngFor="let vendor of vendors" [ngValue]="vendor.VendorId">{{ vendor.Name }}</option>
+                                    </select>
+                                </div>
+
+                                <div class="col-6 col-sm-3 col-lg-1">
+                                    <label class="filter-label" for="maintHistoryRows">Show</label>
+                                    <select id="maintHistoryRows" class="form-select form-select-sm"
+                                        [(ngModel)]="historyPageSize" (ngModelChange)="historyPage = 1">
                                         <option [ngValue]="5">5</option>
                                         <option [ngValue]="10">10</option>
                                         <option [ngValue]="20">20</option>
                                         <option [ngValue]="50">50</option>
                                     </select>
+                                </div>
+
+                                <div class="col-6 col-sm-3 col-lg-1 d-grid">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button"
+                                        (click)="resetHistoryFilters()" [disabled]="!hasHistoryFilters">Reset</button>
                                 </div>
                             </div>
                         </div>

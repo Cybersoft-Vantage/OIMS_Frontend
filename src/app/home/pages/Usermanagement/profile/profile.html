@@ -9,7 +9,7 @@
 
   <div class="row g-4">
     <div class="col-xl-3 col-lg-4">
-      <div class="profile-sidebar p-4 rounded-4 shadow-sm border bg-white h-100 text-center">
+      <div class="profile-sidebar p-4 rounded-4 shadow-sm border h-100 text-center">
         <div class="profile-avatar mb-3">
           <img [src]="profileImageDataUrl || 'assets/images/logo-icon.png'" alt="User Profile Image" class="profile-avatar-img" />
         </div>
@@ -24,7 +24,7 @@
           <button class="btn btn-outline-danger btn-sm rounded-pill" type="button" (click)="clearImage()">Remove Photo</button>
         </div>
 
-        <div class="profile-info mt-4 rounded-3 p-3 bg-light text-start">
+        <div class="profile-info mt-4 rounded-3 p-3 text-start">
           <div class="text-uppercase text-muted fs-xs mb-2">User ID</div>
           <div class="fw-semibold">{{ model.UserId || username }}</div>
         </div>
@@ -32,7 +32,7 @@
     </div>
 
     <div class="col-xl-9 col-lg-8">
-      <div class="profile-form p-4 rounded-4 shadow-sm border bg-white h-100">
+      <div class="profile-form p-4 rounded-4 shadow-sm border h-100">
         <form class="row g-3">
           <div class="col-md-6">
             <label class="form-label">Full Name</label>

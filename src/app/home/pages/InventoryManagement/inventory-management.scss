@@ -1,5 +1,5 @@
 .card .nav-pills .nav-link {
-  color: #2b6cb0;
+  color: --app-text;
 }
 .card .nav-pills .nav-link.active {
   background-color: #2b8cf0;
@@ -27,7 +27,7 @@
 .side-pills .nav-link {
   border-radius: 6px;
   padding: 12px 16px;
-  color: #3b6ea8;
+  color: --app-text;
   margin-bottom: 6px;
   position: relative;
 }
